@@ -3,23 +3,28 @@ package com.bedbeam.browser
 import android.app.Activity
 import android.content.ComponentCallbacks2
 import android.os.Bundle
+import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.widget.Toast
 import com.bedbeam.browser.data.Bookmark
 import com.bedbeam.browser.data.Bookmarks
 import com.bedbeam.browser.data.History
 import com.bedbeam.browser.data.UrlInput
 import com.bedbeam.browser.ui.AddressScreen
 import com.bedbeam.browser.ui.BookmarkActions
+import com.bedbeam.browser.ui.CrossMenu
 import com.bedbeam.browser.ui.EditSheet
 import com.bedbeam.browser.ui.Palette
 import com.bedbeam.browser.ui.StartScreen
 import com.bedbeam.browser.web.BrowserWebView
+import com.bedbeam.browser.web.PointerController
+import com.bedbeam.browser.web.PointerView
 
 /**
- * One activity, one tab. Layers, bottom to top: the page (WebView), the start screen, one overlay
- * (address screen, bookmark actions or edit sheet).
+ * One activity, one tab. Layers, bottom to top: the page (WebView + pointer), the start screen,
+ * one overlay (address screen, cross menu, bookmark actions or edit sheet).
  */
 class MainActivity : Activity(), BrowserWebView.Listener {
 
@@ -28,6 +33,8 @@ class MainActivity : Activity(), BrowserWebView.Listener {
     private lateinit var root: FrameLayout
     private lateinit var pageHost: FrameLayout
     private lateinit var start: StartScreen
+    private lateinit var pointerView: PointerView
+    private lateinit var pointer: PointerController
 
     private var web: BrowserWebView? = null
     /** Address of the page in the tab, kept even when the WebView is freed. */
@@ -48,6 +55,10 @@ class MainActivity : Activity(), BrowserWebView.Listener {
         root = FrameLayout(this).apply { setBackgroundColor(Palette.BG) }
         pageHost = FrameLayout(this)
         root.addView(pageHost, match())
+        pointerView = PointerView(this)
+        pageHost.addView(pointerView, match()) // stays above the WebView, which is inserted at index 0
+        pointer = PointerController(pointerView, { web }, onHoldOk = ::openCrossMenu)
+        pointerView.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> pointer.ensurePlaced() }
         start = StartScreen(
             this, bookmarks,
             onOpenUrl = ::openPage,
@@ -70,12 +81,13 @@ class MainActivity : Activity(), BrowserWebView.Listener {
         w.loadUrl(url)
         start.visibility = View.GONE
         w.requestFocus()
+        pointer.ensurePlaced()
     }
 
     private fun newWebView(): BrowserWebView =
         BrowserWebView(this, this).also {
             web = it
-            pageHost.addView(it, match())
+            pageHost.addView(it, 0, match())
         }
 
     private fun freeWebView() {
@@ -118,6 +130,7 @@ class MainActivity : Activity(), BrowserWebView.Listener {
 
     private fun showOverlay(view: View, onBack: () -> Unit) {
         closeOverlay(restoreFocus = false)
+        pointer.stop()
         focusBeforeOverlay = currentFocus
         overlay = view
         overlayBack = onBack
@@ -140,6 +153,34 @@ class MainActivity : Activity(), BrowserWebView.Listener {
         val screen = AddressScreen(this, bookmarks, history, onGo = ::openPage)
         showOverlay(screen) { closeOverlay() }
         screen.open(initial)
+    }
+
+    private fun openCrossMenu() {
+        val w = web ?: return
+        val url = pageUrl ?: w.url ?: return
+        val bookmarked = bookmarks.all().any { it.url.trimEnd('/') == url.trimEnd('/') }
+        val arms = mapOf(
+            CrossMenu.Dir.LEFT to listOf(
+                CrossMenu.Action("Back", CrossMenu.ICON_BACK) { if (w.canGoBack()) w.goBack() else showStart() },
+                CrossMenu.Action("Forward", CrossMenu.ICON_FORWARD, enabled = w.canGoForward()) { w.goForward() },
+            ),
+            CrossMenu.Dir.RIGHT to listOf(
+                CrossMenu.Action("Reload", CrossMenu.ICON_RELOAD) { w.reload() },
+                CrossMenu.Action(if (bookmarked) "Bookmarked" else "Bookmark", CrossMenu.ICON_BOOKMARK, enabled = !bookmarked) {
+                    val title = w.title?.takeIf { it.isNotBlank() && !it.startsWith("http") }
+                        ?: UrlInput.displayHost(url)
+                    bookmarks.add(Bookmark(title.take(40), url))
+                    start.render()
+                    Toast.makeText(this, "Bookmarked", Toast.LENGTH_SHORT).show()
+                },
+            ),
+            CrossMenu.Dir.UP to listOf(
+                CrossMenu.Action("Address", CrossMenu.ICON_ADDRESS) { openAddress(url) },
+                CrossMenu.Action("Start screen", CrossMenu.ICON_HOME) { showStart() },
+            ),
+        )
+        val menu = CrossMenu(this, UrlInput.displayHost(url), "", arms, onClose = { closeOverlay() })
+        showOverlay(menu) { closeOverlay() }
     }
 
     private fun openBookmarkActions(index: Int) {
@@ -194,6 +235,13 @@ class MainActivity : Activity(), BrowserWebView.Listener {
     }
 
     // ---- keys & lifecycle -------------------------------------------------------------------
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        val menu = overlay as? CrossMenu
+        if (menu != null && menu.handleKey(event)) return true
+        if (onPage && overlay == null && web != null && pointer.handleKey(event)) return true
+        return super.dispatchKeyEvent(event)
+    }
 
     @Deprecated("Back is handled here for API 29-35 without predictive back")
     override fun onBackPressed() {
