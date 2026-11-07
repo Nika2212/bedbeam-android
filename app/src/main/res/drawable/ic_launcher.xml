@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Accent rounded square with an arrow, matching the design canvas logo. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#5AA9FF"
+        android:pathData="M30,14h48a16,16 0,0 1,16 16v48a16,16 0,0 1,-16 16h-48a16,16 0,0 1,-16 -16v-48a16,16 0,0 1,16 -16z" />
+    <path
+        android:strokeColor="#0B0C0E"
+        android:strokeWidth="9"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M32,54h40M56,38l16,16 -16,16" />
+</vector>

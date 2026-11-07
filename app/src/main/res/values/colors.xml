@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Design tokens from the BedBeam design canvas (dark minimal). -->
+    <color name="bg">#0B0C0E</color>
+    <color name="surface">#16181C</color>
+    <color name="surface2">#23272E</color>
+    <color name="border">#2A2E35</color>
+    <color name="text">#F2F3F5</color>
+    <color name="muted">#A3A8B3</color>
+    <color name="accent">#5AA9FF</color>
+</resources>
