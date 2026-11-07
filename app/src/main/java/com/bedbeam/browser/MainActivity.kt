@@ -1,86 +1,252 @@
 package com.bedbeam.browser
 
 import android.app.Activity
-import android.graphics.Color
-import android.graphics.Typeface
+import android.content.ComponentCallbacks2
 import android.os.Bundle
-import android.util.Log
-import android.util.TypedValue
-import android.view.Gravity
-import android.view.KeyEvent
-import android.widget.LinearLayout
-import android.widget.TextView
+import android.view.View
+import android.view.ViewGroup
+import android.widget.FrameLayout
+import com.bedbeam.browser.data.Bookmark
+import com.bedbeam.browser.data.Bookmarks
+import com.bedbeam.browser.data.History
+import com.bedbeam.browser.data.UrlInput
+import com.bedbeam.browser.ui.AddressScreen
+import com.bedbeam.browser.ui.BookmarkActions
+import com.bedbeam.browser.ui.EditSheet
+import com.bedbeam.browser.ui.Palette
+import com.bedbeam.browser.ui.StartScreen
+import com.bedbeam.browser.web.BrowserWebView
 
 /**
- * Step 0: remote key tester.
- * Shows every key the remote sends (name, code, scan code, device, short/long press)
- * and logs it under the "BedBeamKeys" tag, so the real buttons can be mapped.
- * Hold Back for 2 seconds to exit; Home always works.
+ * One activity, one tab. Layers, bottom to top: the page (WebView), the start screen, one overlay
+ * (address screen, bookmark actions or edit sheet).
  */
-class MainActivity : Activity() {
+class MainActivity : Activity(), BrowserWebView.Listener {
 
-    private lateinit var log: TextView
-    private val lines = ArrayDeque<String>()
-    private var backDownAt = 0L
+    private lateinit var bookmarks: Bookmarks
+    private lateinit var history: History
+    private lateinit var root: FrameLayout
+    private lateinit var pageHost: FrameLayout
+    private lateinit var start: StartScreen
+
+    private var web: BrowserWebView? = null
+    /** Address of the page in the tab, kept even when the WebView is freed. */
+    private var pageUrl: String? = null
+    private var onPage = false
+    private var stopped = false
+    private var reloadOnStart = false
+
+    private var overlay: View? = null
+    private var overlayBack: (() -> Unit)? = null
+    private var focusBeforeOverlay: View? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        bookmarks = Bookmarks(this)
+        history = History(this)
 
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Color.parseColor("#0B0C0E"))
-            setPadding(dp(48), dp(32), dp(48), dp(24))
-        }
-        root.addView(text("BedBeam · key test", 26f, "#F2F3F5", bold = true))
-        root.addView(text("Press every button on the remote, one at a time. Hold Back 2 s to exit.", 16f, "#A3A8B3").apply {
-            setPadding(0, dp(8), 0, dp(20))
-        })
-        log = text("Waiting for a key…", 18f, "#F2F3F5").apply {
-            typeface = Typeface.MONOSPACE
-            gravity = Gravity.TOP
-        }
-        root.addView(log)
+        root = FrameLayout(this).apply { setBackgroundColor(Palette.BG) }
+        pageHost = FrameLayout(this)
+        root.addView(pageHost, match())
+        start = StartScreen(
+            this, bookmarks,
+            onOpenUrl = ::openPage,
+            onOpenAddress = { openAddress("") },
+            onBookmarkActions = ::openBookmarkActions,
+            onAddBookmark = ::openAddBookmark,
+        )
+        root.addView(start, match())
         setContentView(root)
+        start.focusTile(0)
     }
 
-    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        if (event.action == KeyEvent.ACTION_DOWN && event.keyCode == KeyEvent.KEYCODE_BACK && event.repeatCount == 0) {
-            backDownAt = event.eventTime
+    // ---- page -----------------------------------------------------------------------------
+
+    private fun openPage(url: String) {
+        closeOverlay(restoreFocus = false)
+        pageUrl = url
+        onPage = true
+        val w = web ?: newWebView()
+        w.loadUrl(url)
+        start.visibility = View.GONE
+        w.requestFocus()
+    }
+
+    private fun newWebView(): BrowserWebView =
+        BrowserWebView(this, this).also {
+            web = it
+            pageHost.addView(it, match())
         }
-        if (event.action == KeyEvent.ACTION_UP && event.keyCode == KeyEvent.KEYCODE_BACK &&
-            event.eventTime - backDownAt >= 2000
-        ) {
-            finish()
-            return true
+
+    private fun freeWebView() {
+        web?.let {
+            pageHost.removeView(it)
+            it.release()
         }
-        record(event)
-        return true // consume everything, so no key does anything else while testing
+        web = null
     }
 
-    private fun record(e: KeyEvent) {
-        val action = when (e.action) {
-            KeyEvent.ACTION_DOWN -> if (e.repeatCount == 0) "down" else "repeat#${e.repeatCount}"
-            KeyEvent.ACTION_UP -> "up   (held ${e.eventTime - e.downTime} ms)"
-            else -> "action${e.action}"
+    private fun showStart() {
+        onPage = false
+        pageUrl = null
+        freeWebView() // one tab: leaving the page frees all its memory
+        start.visibility = View.VISIBLE
+        start.restoreFocus()
+    }
+
+    override fun onPageStarted(url: String) {
+        pageUrl = url
+    }
+
+    override fun onPageFinished(url: String, title: String?) {
+        if (url.startsWith("http")) {
+            pageUrl = url
+            history.add(url, title)
         }
-        val device = e.device?.name ?: "?"
-        val line = "${KeyEvent.keyCodeToString(e.keyCode).removePrefix("KEYCODE_").padEnd(18)} " +
-            "code=${e.keyCode.toString().padEnd(4)} scan=${e.scanCode.toString().padEnd(4)} " +
-            "$action  [$device]"
-        Log.i("BedBeamKeys", line)
-        // Only show downs and ups (repeats would flood the screen).
-        if (e.action == KeyEvent.ACTION_DOWN && e.repeatCount > 0) return
-        lines.addFirst(line)
-        while (lines.size > 14) lines.removeLast()
-        log.text = lines.joinToString("\n")
     }
 
-    private fun text(s: String, sp: Float, color: String, bold: Boolean = false) = TextView(this).apply {
-        text = s
-        setTextSize(TypedValue.COMPLEX_UNIT_SP, sp)
-        setTextColor(Color.parseColor(color))
-        if (bold) setTypeface(typeface, Typeface.BOLD)
+    override fun onRendererGone() {
+        // The page process was killed (usually for memory). Rebuild the WebView and reload.
+        val url = pageUrl
+        freeWebView()
+        if (onPage && url != null) {
+            if (stopped) reloadOnStart = true else openPage(url)
+        }
     }
 
-    private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
+    // ---- overlays -------------------------------------------------------------------------
+
+    private fun showOverlay(view: View, onBack: () -> Unit) {
+        closeOverlay(restoreFocus = false)
+        focusBeforeOverlay = currentFocus
+        overlay = view
+        overlayBack = onBack
+        root.addView(view, match())
+    }
+
+    private fun closeOverlay(restoreFocus: Boolean = true) {
+        val v = overlay ?: return
+        (v as? AddressScreen)?.hideKeyboard()
+        (v as? EditSheet)?.hideKeyboard()
+        root.removeView(v)
+        overlay = null
+        overlayBack = null
+        if (restoreFocus) focusBeforeOverlay?.takeIf { it.isAttachedToWindow }?.requestFocus()
+            ?: if (!onPage) start.restoreFocus() else web?.requestFocus()
+        focusBeforeOverlay = null
+    }
+
+    private fun openAddress(initial: String) {
+        val screen = AddressScreen(this, bookmarks, history, onGo = ::openPage)
+        showOverlay(screen) { closeOverlay() }
+        screen.open(initial)
+    }
+
+    private fun openBookmarkActions(index: Int) {
+        val b = bookmarks.all().getOrNull(index) ?: return
+        val sheet = BookmarkActions(
+            this, b,
+            onOpen = { openPage(b.url) },
+            onRename = { openRename(index) },
+            onMove = {
+                closeOverlay(restoreFocus = false)
+                start.startMove(index)
+            },
+            onRemove = {
+                bookmarks.remove(index)
+                closeOverlay(restoreFocus = false)
+                start.render(index)
+            },
+        )
+        showOverlay(sheet) { closeOverlay() }
+        sheet.focusFirst()
+    }
+
+    private fun openRename(index: Int) {
+        val b = bookmarks.all().getOrNull(index) ?: return
+        val sheet = EditSheet(this, "Rename bookmark", listOf(EditSheet.Field("Name", b.name))) { values ->
+            val name = values[0].ifBlank { b.name }
+            bookmarks.update(index, b.copy(name = name))
+            closeOverlay(restoreFocus = false)
+            start.render(index)
+        }
+        showOverlay(sheet) { closeOverlay(restoreFocus = false); start.focusTile(index) }
+        sheet.focusFirst()
+    }
+
+    private fun openAddBookmark() {
+        val sheet = EditSheet(
+            this, "Add bookmark",
+            listOf(EditSheet.Field("Address", "", isUrl = true), EditSheet.Field("Name (optional)", "")),
+        ) { values ->
+            val url = UrlInput.toUrl(values[0])
+            if (url.isNotBlank()) {
+                val name = values[1].ifBlank {
+                    UrlInput.displayHost(url).substringBefore('.').replaceFirstChar { it.uppercase() }
+                }
+                bookmarks.add(Bookmark(name, url))
+            }
+            closeOverlay(restoreFocus = false)
+            start.render(bookmarks.all().size - 1)
+        }
+        showOverlay(sheet) { closeOverlay() }
+        sheet.focusFirst()
+    }
+
+    // ---- keys & lifecycle -------------------------------------------------------------------
+
+    @Deprecated("Back is handled here for API 29-35 without predictive back")
+    override fun onBackPressed() {
+        when {
+            overlay != null -> overlayBack?.invoke()
+            onPage -> {
+                val w = web
+                if (w != null && w.canGoBack()) w.goBack() else showStart()
+            }
+            else -> finish()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        web?.onResume()
+    }
+
+    override fun onPause() {
+        web?.onPause()
+        super.onPause()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        stopped = false
+        web?.resumeTimers()
+        if (reloadOnStart) {
+            reloadOnStart = false
+            pageUrl?.let { openPage(it) }
+        }
+    }
+
+    override fun onStop() {
+        stopped = true
+        web?.pauseTimers()
+        super.onStop()
+    }
+
+    @Deprecated("Levels still delivered on API 29-35")
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        // In the background and the system is short on memory: free the page, reload it on return.
+        if (stopped && level >= ComponentCallbacks2.TRIM_MEMORY_BACKGROUND && web != null) {
+            freeWebView()
+            reloadOnStart = onPage && pageUrl != null
+        }
+    }
+
+    override fun onDestroy() {
+        freeWebView()
+        super.onDestroy()
+    }
+
+    private fun match() = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
 }
