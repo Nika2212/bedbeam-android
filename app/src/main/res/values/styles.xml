@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Text styles. Weights: sans-serif (400), sans-serif-medium (500/600), textStyle bold (700). -->
+<resources>
+    <style name="BB.Text" parent="">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textColor">@color/text</item>
+        <item name="android:textSize">@dimen/text_body</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <style name="BB.Text.Medium">
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="BB.Text.Bold">
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="BB.Text.Muted">
+        <item name="android:textColor">@color/muted</item>
+    </style>
+
+    <style name="BB.Text.ScreenTitle" parent="BB.Text.Bold">
+        <item name="android:textSize">@dimen/text_title</item>
+    </style>
+
+    <style name="BB.Text.Brand" parent="BB.Text.Medium">
+        <item name="android:textSize">@dimen/text_l</item>
+    </style>
+
+    <style name="BB.Text.Section" parent="BB.Text.Medium">
+        <item name="android:textSize">@dimen/text_xs</item>
+        <item name="android:textColor">@color/muted</item>
+        <item name="android:letterSpacing">0.12</item>
+    </style>
+
+    <!-- Key hint: the key chip and its meaning -->
+    <style name="BB.Text.KeyChip" parent="BB.Text.Medium">
+        <item name="android:textSize">@dimen/text_s</item>
+        <item name="android:background">@drawable/bg_key_chip</item>
+        <item name="android:paddingStart">7.5dp</item>
+        <item name="android:paddingEnd">7.5dp</item>
+        <item name="android:paddingTop">2.25dp</item>
+        <item name="android:paddingBottom">2.25dp</item>
+    </style>
+
+    <style name="BB.Text.KeyLabel" parent="BB.Text.Muted">
+        <item name="android:textSize">@dimen/text_s</item>
+    </style>
+</resources>

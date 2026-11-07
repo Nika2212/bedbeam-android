@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A destructive side-sheet row (Remove): red until focused. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="45dp"
+    android:background="@drawable/bg_sheet_action"
+    android:clickable="true"
+    android:focusable="true"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="15dp"
+    android:paddingEnd="15dp">
+
+    <ImageView
+        android:id="@+id/icon"
+        android:layout_width="@dimen/icon_m"
+        android:layout_height="@dimen/icon_m"
+        android:duplicateParentState="true"
+        android:importantForAccessibility="no"
+        android:tint="@color/on_focus_danger" />
+
+    <TextView
+        android:id="@+id/label"
+        style="@style/BB.Text.Medium"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:duplicateParentState="true"
+        android:textColor="@color/on_focus_danger" />
+</LinearLayout>

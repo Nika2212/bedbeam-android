@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Cross menu on hold OK (design artboard "Cross menu"). Positions follow the 960×540 dp screen:
+     centre circle in the middle, an inner and an outer action in each arrow direction.
+     Labels/icons are set in code (MainActivity.openCrossMenu); unused slots are hidden. -->
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/scrim_strong"
+        android:clickable="true"
+        android:clipChildren="false">
+
+        <LinearLayout
+            android:layout_width="126dp"
+            android:layout_height="126dp"
+            android:layout_marginStart="417dp"
+            android:layout_marginTop="207dp"
+            android:background="@drawable/bg_cross_center"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingStart="10.5dp"
+            android:paddingEnd="10.5dp">
+
+            <TextView
+                android:id="@+id/center_title"
+                style="@style/BB.Text.Medium"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:maxLines="2"
+                android:textSize="12.75sp" />
+
+            <TextView
+                android:id="@+id/center_sub"
+                style="@style/BB.Text.Muted"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:gravity="center"
+                android:textSize="@dimen/text_xs" />
+        </LinearLayout>
+
+        <include android:id="@+id/pill_up_inner" layout="@layout/item_cross_pill_inner" android:layout_width="150dp" android:layout_height="45dp" android:layout_marginStart="405dp" android:layout_marginTop="144dp" />
+        <include android:id="@+id/pill_up_outer" layout="@layout/item_cross_pill_outer" android:layout_width="150dp" android:layout_height="45dp" android:layout_marginStart="405dp" android:layout_marginTop="87dp" />
+        <include android:id="@+id/pill_down_inner" layout="@layout/item_cross_pill_inner" android:layout_width="165dp" android:layout_height="45dp" android:layout_marginStart="397.5dp" android:layout_marginTop="351dp" />
+        <include android:id="@+id/pill_down_outer" layout="@layout/item_cross_pill_outer" android:layout_width="165dp" android:layout_height="45dp" android:layout_marginStart="397.5dp" android:layout_marginTop="408dp" />
+        <include android:id="@+id/pill_left_inner" layout="@layout/item_cross_pill_inner" android:layout_width="135dp" android:layout_height="45dp" android:layout_marginStart="264dp" android:layout_marginTop="247.5dp" />
+        <include android:id="@+id/pill_left_outer" layout="@layout/item_cross_pill_outer" android:layout_width="135dp" android:layout_height="45dp" android:layout_marginStart="117dp" android:layout_marginTop="247.5dp" />
+        <include android:id="@+id/pill_right_inner" layout="@layout/item_cross_pill_inner" android:layout_width="135dp" android:layout_height="45dp" android:layout_marginStart="561dp" android:layout_marginTop="247.5dp" />
+        <include android:id="@+id/pill_right_outer" layout="@layout/item_cross_pill_outer" android:layout_width="135dp" android:layout_height="45dp" android:layout_marginStart="708dp" android:layout_marginTop="247.5dp" />
+
+        <LinearLayout
+            android:id="@+id/hints"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="480dp"
+            android:gravity="center"
+            android:orientation="horizontal" />
+    </FrameLayout>
+</merge>

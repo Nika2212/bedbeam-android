@@ -1,63 +1,38 @@
 package com.bedbeam.browser.ui
 
 import android.content.Context
-import android.view.Gravity
+import android.view.LayoutInflater
 import android.view.View
 import android.widget.FrameLayout
-import android.widget.LinearLayout
 import android.widget.TextView
+import com.bedbeam.browser.R
 
 /**
- * Feedback over full-screen video (design: "Full-screen video"): a centre bubble ("+10 s", "Pause")
+ * Feedback over full-screen video (layout: overlay_video_osd): a centre bubble ("+10 s", "Pause")
  * and a slim timeline. Shown only after a key press; fades out after 1.5 s.
  */
 class VideoOsd(context: Context) : FrameLayout(context) {
-    private val d = Dims(context)
-    private val bubble = TextView(context)
-    private val bar = LinearLayout(context)
-    private val now = TextView(context)
-    private val total = TextView(context)
-    private val track = FrameLayout(context)
-    private val fill = View(context)
-    private val knob = View(context)
+    private val bubble: TextView
+    private val now: TextView
+    private val total: TextView
+    private val track: View
+    private val fill: View
+    private val knob: View
     private var progress = 0f
     private val hide = Runnable { animate().alpha(0f).setDuration(250).start() }
 
     init {
+        LayoutInflater.from(context).inflate(R.layout.overlay_video_osd, this, true)
+        bubble = findViewById(R.id.bubble)
+        now = findViewById(R.id.time_now)
+        total = findViewById(R.id.time_total)
+        track = findViewById(R.id.track)
+        fill = findViewById(R.id.track_fill)
+        knob = findViewById(R.id.track_knob)
+        findViewById<View>(R.id.track_box).addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> layoutProgress() }
         isClickable = false
         isFocusable = false
         alpha = 0f
-
-        bubble.apply {
-            gravity = Gravity.CENTER
-            background = oval(Palette.OSD_BUBBLE)
-            textStyle(d, 22, Palette.TEXT, 700)
-        }
-        addView(bubble, LayoutParams(d.px(128), d.px(128), Gravity.CENTER))
-
-        bar.orientation = LinearLayout.HORIZONTAL
-        bar.gravity = Gravity.CENTER_VERTICAL
-        now.textStyle(d, 18, Palette.TEXT, 600)
-        total.textStyle(d, 18, Palette.TEXT, 600)
-        track.background = rounded(Palette.OSD_TRACK, d.f(3))
-        fill.background = rounded(Palette.ACCENT, d.f(3))
-        knob.background = oval(Palette.TEXT)
-        track.addView(fill, LayoutParams(0, LayoutParams.MATCH_PARENT))
-        bar.addView(now)
-        val trackBox = FrameLayout(context).apply {
-            addView(track, LayoutParams(LayoutParams.MATCH_PARENT, d.px(6), Gravity.CENTER_VERTICAL))
-            addView(knob, LayoutParams(d.px(20), d.px(20), Gravity.CENTER_VERTICAL))
-            addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> layoutProgress() }
-        }
-        bar.addView(trackBox, LinearLayout.LayoutParams(0, d.px(24), 1f).apply {
-            marginStart = d.px(20); marginEnd = d.px(20)
-        })
-        bar.addView(total)
-        bar.setPadding(d.px(24), d.px(14), d.px(24), d.px(14))
-        bar.background = rounded(Palette.OSD_BAR, d.f(24))
-        addView(bar, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, Gravity.BOTTOM).apply {
-            leftMargin = d.px(56); rightMargin = d.px(56); bottomMargin = d.px(32)
-        })
     }
 
     /** Show [label] in the centre bubble (null hides the bubble, keeps the timeline). */
@@ -91,7 +66,7 @@ class VideoOsd(context: Context) : FrameLayout(context) {
         val w = track.width
         if (w == 0) return
         fill.layoutParams = fill.layoutParams.apply { width = (w * progress).toInt() }
-        knob.translationX = w * progress - d.f(10)
+        knob.translationX = w * progress - knob.width / 2f
     }
 
     private fun fmt(sec: Double): String {

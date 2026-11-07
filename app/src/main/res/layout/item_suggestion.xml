@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One address suggestion: icon, title, address/engine, kind tag. Focused: accent outline. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="45dp"
+    android:layout_marginTop="4.5dp"
+    android:background="@drawable/bg_suggestion"
+    android:clickable="true"
+    android:focusable="true"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="16.5dp"
+    android:paddingEnd="16.5dp">
+
+    <ImageView
+        android:id="@+id/icon"
+        android:layout_width="@dimen/icon_m"
+        android:layout_height="@dimen/icon_m"
+        android:duplicateParentState="true"
+        android:importantForAccessibility="no"
+        android:tint="@color/on_focus_icon_accent" />
+
+    <TextView
+        android:id="@+id/title"
+        style="@style/BB.Text.Medium"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="13.5dp"
+        android:ellipsize="end"
+        android:maxLines="1" />
+
+    <TextView
+        android:id="@+id/sub"
+        style="@style/BB.Text.Muted"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="13.5dp"
+        android:layout_weight="1"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textSize="@dimen/text_m" />
+
+    <TextView
+        android:id="@+id/tag"
+        style="@style/BB.Text.Muted"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="13.5dp"
+        android:textSize="@dimen/text_xs" />
+</LinearLayout>

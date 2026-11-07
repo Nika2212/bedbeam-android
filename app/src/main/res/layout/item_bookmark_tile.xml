@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One bookmark tile. Focused: light background, dark text, grows 7%. Activated = being moved
+     (adds the accent outline). Children follow the tile's focus via duplicateParentState. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="199.5dp"
+    android:layout_height="111dp"
+    android:layout_marginEnd="18dp"
+    android:layout_marginBottom="18dp"
+    android:background="@drawable/bg_tile"
+    android:clickable="true"
+    android:focusable="true"
+    android:gravity="center"
+    android:longClickable="true"
+    android:orientation="vertical"
+    android:stateListAnimator="@animator/focus_grow">
+
+    <TextView
+        android:id="@+id/monogram"
+        style="@style/BB.Text.Bold"
+        android:layout_width="42dp"
+        android:layout_height="42dp"
+        android:background="@drawable/bg_monogram"
+        android:duplicateParentState="true"
+        android:gravity="center"
+        android:textColor="@color/text"
+        android:textSize="18sp" />
+
+    <TextView
+        android:id="@+id/name"
+        style="@style/BB.Text.Medium"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10.5dp"
+        android:duplicateParentState="true"
+        android:ellipsize="end"
+        android:gravity="center"
+        android:maxLines="1"
+        android:paddingStart="9dp"
+        android:paddingEnd="9dp"
+        android:textColor="@color/on_focus_text" />
+</LinearLayout>

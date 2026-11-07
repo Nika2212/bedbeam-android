@@ -2,21 +2,18 @@ package com.bedbeam.browser.ui
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.res.ColorStateList
-import android.text.TextUtils
-import android.view.Gravity
 import android.view.KeyEvent
+import android.view.LayoutInflater
 import android.view.View
+import android.widget.FrameLayout
 import android.widget.GridLayout
-import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.TextView
 import com.bedbeam.browser.R
 import com.bedbeam.browser.data.Bookmarks
 
 /**
- * Start screen: logo, search pill and the bookmark grid (design: "Start screen").
+ * Start screen (layout: screen_start, item_bookmark_tile, item_add_tile, item_key_hint).
  * Hold OK on a tile → bookmark actions. "Move" puts a tile in move mode: arrows move it, OK/Back finish.
  */
 @SuppressLint("ViewConstructor")
@@ -28,58 +25,20 @@ class StartScreen(
     private val onBookmarkActions: (Int) -> Unit,
     private val onAddBookmark: () -> Unit,
     private val onOpenSettings: () -> Unit,
-) : LinearLayout(context) {
+) : FrameLayout(context) {
 
-    private val d = Dims(context)
-    private val grid = GridLayout(context)
-    private val hints = LinearLayout(context)
-    private val search: TextView
+    private val inflater = LayoutInflater.from(context)
+    private val grid: GridLayout
+    private val hints: LinearLayout
     private var moveIndex = -1
     private var lastFocused = 0
 
-    private fun s(id: Int) = context.getString(id)
-
-    private val tileW = (1280 - 144 - 3 * 24) / 4
-    private val tileH = 148
-
     init {
-        orientation = VERTICAL
-        setBackgroundColor(Palette.BG)
-        setPadding(d.px(72), d.px(40), d.px(72), d.px(28))
-        clipChildren = false
-        clipToPadding = false
-
-        addView(header())
-
-        search = searchPill()
-        addView(search, LayoutParams(d.px(780), d.px(64)).apply {
-            gravity = Gravity.CENTER_HORIZONTAL
-            topMargin = d.px(32)
-        })
-
-        addView(TextView(context).apply {
-            text = s(R.string.bookmarks_title)
-            letterSpacing = 0.12f
-            textStyle(d, 15, Palette.MUTED, 600)
-        }, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply { topMargin = d.px(32) })
-
-        grid.columnCount = 4
-        grid.clipChildren = false
-        grid.clipToPadding = false
-        grid.setPadding(0, d.px(16), 0, d.px(16))
-        val scroll = ScrollView(context).apply {
-            isVerticalScrollBarEnabled = false
-            clipChildren = false
-            clipToPadding = false
-            overScrollMode = OVER_SCROLL_NEVER
-            addView(grid)
-        }
-        addView(scroll, LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f))
-
-        hints.orientation = HORIZONTAL
-        hints.gravity = Gravity.CENTER
-        addView(hints, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply { topMargin = d.px(12) })
-
+        inflater.inflate(R.layout.screen_start, this, true)
+        grid = findViewById(R.id.bookmark_grid)
+        hints = findViewById(R.id.hints)
+        findViewById<View>(R.id.search_pill).setOnClickListener { onOpenAddress() }
+        findViewById<View>(R.id.settings_button).setOnClickListener { onOpenSettings() }
         render(0)
     }
 
@@ -87,10 +46,32 @@ class StartScreen(
     fun render(focusIndex: Int = -1) {
         grid.removeAllViews()
         val list = bookmarks.all()
-        list.forEachIndexed { i, b -> grid.addView(tile(i, b.name, b.url), tileParams(i)) }
-        grid.addView(addTile(), tileParams(list.size))
+        list.forEachIndexed { i, b ->
+            val tile = inflater.inflate(R.layout.item_bookmark_tile, grid, false)
+            tile.findViewById<TextView>(R.id.monogram).text = b.name.trim().firstOrNull()?.uppercase() ?: "?"
+            tile.findViewById<TextView>(R.id.name).text = b.name
+            tile.isActivated = i == moveIndex // accent outline while being moved
+            tile.setOnFocusChangeListener { _, has -> if (has) lastFocused = i }
+            tile.setOnClickListener { if (moveIndex < 0) onOpenUrl(b.url) }
+            tile.setOnLongClickListener {
+                if (moveIndex < 0) onBookmarkActions(i)
+                true
+            }
+            addTile(tile, i)
+        }
+        val add = inflater.inflate(R.layout.item_add_tile, grid, false)
+        add.setOnFocusChangeListener { _, has -> if (has) lastFocused = list.size }
+        add.setOnClickListener { if (moveIndex < 0) onAddBookmark() }
+        addTile(add, list.size)
         updateHints()
         if (focusIndex >= 0) focusTile(focusIndex)
+    }
+
+    /** Last column has no right gap, so four tiles fill the width exactly. */
+    private fun addTile(tile: View, index: Int) {
+        val lp = tile.layoutParams as GridLayout.LayoutParams
+        if (index % 4 == 3) lp.rightMargin = 0
+        grid.addView(tile, lp)
     }
 
     fun focusTile(index: Int) {
@@ -140,164 +121,30 @@ class StartScreen(
         return super.dispatchKeyEvent(e)
     }
 
-    // ---- pieces -------------------------------------------------------------------------
-
-    private fun header() = LinearLayout(context).apply {
-        orientation = HORIZONTAL
-        gravity = Gravity.CENTER_VERTICAL
-        addView(ImageView(context).apply { setImageResource(R.drawable.logo_tile) }, LayoutParams(d.px(36), d.px(36)))
-        addView(TextView(context).apply {
-            text = "BedBeam"
-            textStyle(d, 22, Palette.TEXT, 600)
-        }, LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = d.px(12) })
-        addView(settingsButton(), LayoutParams(d.px(52), d.px(52)))
-    }
-
-    private fun settingsButton() = ImageView(context).apply {
-        setImageResource(R.drawable.ic_settings)
-        contentDescription = s(R.string.settings)
-        isFocusable = true
-        isClickable = true
-        scaleType = ImageView.ScaleType.CENTER_INSIDE
-        setPadding(d.px(14), d.px(14), d.px(14), d.px(14))
-        fun style(has: Boolean) {
-            background = if (has) oval(Palette.TEXT) else oval(Palette.SURFACE).apply { setStroke(d.px(1), Palette.BORDER) }
-            imageTintList = ColorStateList.valueOf(if (has) Palette.BG else Palette.MUTED)
-        }
-        style(false)
-        onFocus { style(it); focusScale(it, 1.1f) }
-        setOnClickListener { onOpenSettings() }
-    }
-
-    private fun searchPill() = TextView(context).apply {
-        text = s(R.string.search_hint)
-        gravity = Gravity.CENTER_VERTICAL
-        isFocusable = true
-        isClickable = true
-        compoundDrawablePadding = d.px(16)
-        setPadding(d.px(28), 0, d.px(28), 0)
-        val icon = context.getDrawable(R.drawable.ic_search)!!.mutate().apply { setBounds(0, 0, d.px(24), d.px(24)) }
-        setCompoundDrawables(icon, null, null, null)
-        fun style(has: Boolean) {
-            background = if (has) rounded(Palette.TEXT, d.f(32)) else rounded(Palette.SURFACE, d.f(32), d.px(1), Palette.BORDER)
-            textStyle(d, 21, if (has) Palette.BG else Palette.MUTED, if (has) 500 else 400)
-            compoundDrawableTintList = ColorStateList.valueOf(if (has) Palette.ON_LIGHT_MUTED else Palette.MUTED)
-        }
-        style(false)
-        onFocus { has -> style(has); focusScale(has, 1.03f) }
-        setOnClickListener { onOpenAddress() }
-    }
-
-    private fun tileParams(i: Int) = GridLayout.LayoutParams().apply {
-        width = d.px(tileW)
-        height = d.px(tileH)
-        setMargins(0, 0, if (i % 4 == 3) 0 else d.px(24), d.px(24))
-    }
-
-    private fun tile(index: Int, name: String, url: String): View {
-        val tile = LinearLayout(context).apply {
-            orientation = VERTICAL
-            gravity = Gravity.CENTER
-            isFocusable = true
-            isClickable = true
-            isLongClickable = true
-        }
-        val mono = TextView(context).apply {
-            text = name.trim().firstOrNull()?.uppercase() ?: "?"
-            gravity = Gravity.CENTER
-            textStyle(d, 24, Palette.TEXT, 700)
-        }
-        tile.addView(mono, LayoutParams(d.px(56), d.px(56)))
-        val label = TextView(context).apply {
-            text = name
-            maxLines = 1
-            ellipsize = TextUtils.TruncateAt.END
-            gravity = Gravity.CENTER
-            setPadding(d.px(12), 0, d.px(12), 0)
-            textStyle(d, 20, Palette.TEXT, 600)
-        }
-        tile.addView(label, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply { topMargin = d.px(14) })
-
-        val moving = index == moveIndex
-        fun style(has: Boolean) {
-            tile.background = when {
-                has -> rounded(Palette.TEXT, d.f(18), if (moving) d.px(4) else 0, Palette.ACCENT)
-                else -> rounded(Palette.SURFACE, d.f(18), d.px(1), Palette.SURFACE2)
-            }
-            mono.background = oval(if (has) Palette.BG else Palette.SURFACE3)
-            label.setTextColor(if (has) Palette.BG else Palette.TEXT)
-            tile.focusScale(has)
-        }
-        style(false)
-        tile.onFocus { has ->
-            style(has)
-            if (has) lastFocused = index
-        }
-        tile.setOnClickListener { if (moveIndex < 0) onOpenUrl(url) }
-        tile.setOnLongClickListener {
-            if (moveIndex < 0) onBookmarkActions(index)
-            true
-        }
-        return tile
-    }
-
-    private fun addTile(): View {
-        val index = bookmarks.all().size
-        val tile = LinearLayout(context).apply {
-            orientation = VERTICAL
-            gravity = Gravity.CENTER
-            isFocusable = true
-            isClickable = true
-        }
-        val icon = ImageView(context).apply { setImageResource(R.drawable.ic_plus) }
-        tile.addView(icon, LayoutParams(d.px(32), d.px(32)))
-        val label = TextView(context).apply {
-            text = s(R.string.add_bookmark)
-            textStyle(d, 20, Palette.MUTED, 600)
-        }
-        tile.addView(label, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply { topMargin = d.px(14) })
-        fun style(has: Boolean) {
-            tile.background = if (has) rounded(Palette.TEXT, d.f(18)) else rounded(0, d.f(18), d.px(2), Palette.BORDER2, d.f(8))
-            icon.imageTintList = ColorStateList.valueOf(if (has) Palette.BG else Palette.MUTED)
-            label.setTextColor(if (has) Palette.BG else Palette.MUTED)
-            tile.focusScale(has)
-        }
-        style(false)
-        tile.onFocus { has ->
-            style(has)
-            if (has) lastFocused = index
-        }
-        tile.setOnClickListener { if (moveIndex < 0) onAddBookmark() }
-        return tile
-    }
-
     private fun updateHints() {
-        hints.removeAllViews()
         val items = if (moveIndex >= 0) {
-            listOf(s(R.string.key_arrows) to s(R.string.hint_move_bookmark), s(R.string.key_ok) to s(R.string.hint_done))
+            listOf(R.string.key_arrows to R.string.hint_move_bookmark, R.string.key_ok to R.string.hint_done)
         } else {
-            listOf(s(R.string.key_ok) to s(R.string.hint_open), s(R.string.key_hold_ok) to s(R.string.hint_edit_bookmark),
-                s(R.string.key_up) to s(R.string.hint_address_bar), s(R.string.key_back) to s(R.string.hint_exit))
+            listOf(
+                R.string.key_ok to R.string.hint_open, R.string.key_hold_ok to R.string.hint_edit_bookmark,
+                R.string.key_up to R.string.hint_address_bar, R.string.key_back to R.string.hint_exit,
+            )
         }
-        items.forEachIndexed { i, (key, what) ->
-            hints.addView(hint(key, what), LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply {
-                if (i > 0) marginStart = d.px(36)
-            })
-        }
+        KeyHints.fill(hints, R.layout.item_key_hint, items)
     }
+}
 
-    private fun hint(key: String, what: String) = LinearLayout(context).apply {
-        orientation = HORIZONTAL
-        gravity = Gravity.CENTER_VERTICAL
-        addView(TextView(context).apply {
-            text = key
-            textStyle(d, 16, Palette.TEXT, 600)
-            setPadding(d.px(10), d.px(3), d.px(10), d.px(3))
-            background = rounded(0, d.f(6), d.px(1), Palette.BORDER2)
-        })
-        addView(TextView(context).apply {
-            text = what
-            textStyle(d, 16, Palette.MUTED)
-        }, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply { marginStart = d.px(10) })
+/** Fills a hint row with "key  meaning" chips from [layout] (item_key_hint / item_key_hint_dim). */
+object KeyHints {
+    fun fill(row: LinearLayout, layout: Int, items: List<Pair<Int, Int>>) {
+        row.removeAllViews()
+        val inflater = LayoutInflater.from(row.context)
+        items.forEachIndexed { i, (key, label) ->
+            val v = inflater.inflate(layout, row, false)
+            v.findViewById<TextView>(R.id.key).setText(key)
+            v.findViewById<TextView>(R.id.label).setText(label)
+            if (i == 0) (v.layoutParams as LinearLayout.LayoutParams).marginStart = 0
+            row.addView(v)
+        }
     }
 }

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Feedback over full-screen video (design artboard "Full-screen video"): centre bubble and a
+     slim timeline. Shown after a key press, fades after 1.5 s. Progress is positioned in code. -->
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <TextView
+        android:id="@+id/bubble"
+        style="@style/BB.Text.Bold"
+        android:layout_width="96dp"
+        android:layout_height="96dp"
+        android:layout_gravity="center"
+        android:background="@drawable/bg_osd_bubble"
+        android:gravity="center"
+        android:textSize="@dimen/text_l" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginStart="42dp"
+        android:layout_marginEnd="42dp"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/bg_osd_bar"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="18dp"
+        android:paddingTop="10.5dp"
+        android:paddingEnd="18dp"
+        android:paddingBottom="10.5dp">
+
+        <TextView
+            android:id="@+id/time_now"
+            style="@style/BB.Text.Medium"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="@dimen/text_m" />
+
+        <FrameLayout
+            android:id="@+id/track_box"
+            android:layout_width="0dp"
+            android:layout_height="18dp"
+            android:layout_marginStart="15dp"
+            android:layout_marginEnd="15dp"
+            android:layout_weight="1">
+
+            <FrameLayout
+                android:id="@+id/track"
+                android:layout_width="match_parent"
+                android:layout_height="4.5dp"
+                android:layout_gravity="center_vertical"
+                android:background="@drawable/bg_osd_track">
+
+                <View
+                    android:id="@+id/track_fill"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/bg_osd_fill" />
+            </FrameLayout>
+
+            <View
+                android:id="@+id/track_knob"
+                android:layout_width="15dp"
+                android:layout_height="15dp"
+                android:layout_gravity="center_vertical"
+                android:background="@drawable/bg_osd_knob" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/time_total"
+            style="@style/BB.Text.Medium"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="@dimen/text_m" />
+    </LinearLayout>
+</merge>

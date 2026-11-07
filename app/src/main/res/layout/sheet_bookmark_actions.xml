@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Side sheet on hold-OK over a bookmark (design artboard "Bookmark actions"). -->
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/scrim"
+        android:clickable="true">
+
+        <LinearLayout
+            android:layout_width="345dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="end"
+            android:background="@color/surface"
+            android:orientation="vertical"
+            android:paddingStart="30dp"
+            android:paddingTop="36dp"
+            android:paddingEnd="30dp"
+            android:paddingBottom="30dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/monogram"
+                    style="@style/BB.Text.Bold"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_monogram_static"
+                    android:gravity="center"
+                    android:textSize="21sp" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="13.5dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/name"
+                        style="@style/BB.Text.Medium"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="18sp" />
+
+                    <TextView
+                        android:id="@+id/host"
+                        style="@style/BB.Text.Muted"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4.5dp"
+                        android:textSize="12.75sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <include
+                android:id="@+id/action_open"
+                layout="@layout/item_sheet_action"
+                android:layout_width="match_parent"
+                android:layout_height="45dp"
+                android:layout_marginTop="21dp" />
+
+            <include
+                android:id="@+id/action_rename"
+                layout="@layout/item_sheet_action"
+                android:layout_width="match_parent"
+                android:layout_height="45dp"
+                android:layout_marginTop="4.5dp" />
+
+            <include
+                android:id="@+id/action_move"
+                layout="@layout/item_sheet_action"
+                android:layout_width="match_parent"
+                android:layout_height="45dp"
+                android:layout_marginTop="4.5dp" />
+
+            <include
+                android:id="@+id/action_remove"
+                layout="@layout/item_sheet_action_danger"
+                android:layout_width="match_parent"
+                android:layout_height="45dp"
+                android:layout_marginTop="4.5dp" />
+        </LinearLayout>
+    </FrameLayout>
+</merge>

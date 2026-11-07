@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A cross-menu action (outer ring). Selected (arrow pointing at it): light, accent outline, grows. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="135dp"
+    android:layout_height="45dp"
+    android:background="@drawable/bg_cross_pill_outer"
+    android:gravity="center"
+    android:orientation="horizontal"
+    android:stateListAnimator="@animator/select_grow">
+
+    <ImageView
+        android:id="@+id/icon"
+        android:layout_width="@dimen/icon_s"
+        android:layout_height="@dimen/icon_s"
+        android:duplicateParentState="true"
+        android:importantForAccessibility="no"
+        android:tint="@color/on_select_text" />
+
+    <TextView
+        android:id="@+id/label"
+        style="@style/BB.Text.Medium"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="7.5dp"
+        android:duplicateParentState="true"
+        android:maxLines="1"
+        android:textColor="@color/on_select_text"
+        android:textSize="@dimen/text_m" />
+</LinearLayout>
