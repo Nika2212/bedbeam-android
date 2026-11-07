@@ -5,6 +5,9 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Message
+import android.util.Log
+import android.view.View
+import android.webkit.ConsoleMessage
 import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
@@ -12,11 +15,13 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.webkit.JavaScriptReplyProxy
 import androidx.webkit.ScriptHandler
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import com.bedbeam.browser.adblock.AdBlocker
 import com.bedbeam.browser.ui.Palette
+import org.json.JSONObject
 import java.io.ByteArrayInputStream
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -38,6 +43,27 @@ class BrowserWebView(
         fun onPageFinished(url: String, title: String?)
         /** The page's renderer process died (usually killed for memory). */
         fun onRendererGone()
+        /** A player asked for full screen: show [view] over everything. */
+        fun onEnterFullscreen(view: View, exit: WebChromeClient.CustomViewCallback)
+        fun onExitFullscreen()
+        /** Some video on the page started (true) or stopped (false) playing. */
+        fun onVideoPlaying(playing: Boolean)
+        /** Reply to a video command: position, duration (0 if unknown), paused. */
+        fun onVideoState(t: Double, d: Double, paused: Boolean)
+        /** A video command found no <video> on the page (e.g. the player loads it on first play). */
+        fun onNoVideo()
+    }
+
+    /** Last frame that reported a video / a playing video: where remote commands go. */
+    private var videoFrame: JavaScriptReplyProxy? = null
+    private var playingFrame: JavaScriptReplyProxy? = null
+    private var topFrame: JavaScriptReplyProxy? = null
+
+    /** Send a command to the page's main video ("toggle", "seek:10", "state", "exitfs"). False if none. */
+    fun videoCommand(cmd: String): Boolean {
+        val frame = playingFrame ?: videoFrame ?: topFrame ?: return false
+        frame.postMessage(cmd)
+        return true
     }
 
     /** Host of the page being shown; read from WebView's background threads. */
@@ -78,6 +104,32 @@ class BrowserWebView(
         webViewClient = Client()
         webChromeClient = Chrome()
         refreshAdBoxHiding()
+        installVideoBridge()
+    }
+
+    private fun installVideoBridge() {
+        if (!WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER) ||
+            !WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)
+        ) {
+            Log.w(TAG, "video bridge unsupported by this WebView")
+            return
+        }
+        WebViewCompat.addWebMessageListener(this, "bedbeamNative", setOf("*")) { _, message, _, isMain, frame ->
+            val o = try { JSONObject(message.data ?: return@addWebMessageListener) } catch (e: Exception) { return@addWebMessageListener }
+            when (o.optString("type")) {
+                "hello" -> if (isMain) topFrame = frame
+                "none" -> listener.onNoVideo()
+                "video" -> videoFrame = frame
+                "playing" -> {
+                    playingFrame = frame
+                    listener.onVideoPlaying(true)
+                }
+                "paused" -> if (frame == playingFrame) listener.onVideoPlaying(false)
+                "state" -> listener.onVideoState(o.optDouble("t"), o.optDouble("d"), o.optBoolean("paused"))
+            }
+        }
+        val js = context.assets.open("video_bridge.js").bufferedReader().use { it.readText() }
+        WebViewCompat.addDocumentStartJavaScript(this, js, setOf("*"))
     }
 
     /** Re-apply the ad-box CSS after the per-site ad-block setting changed. */
@@ -141,6 +193,10 @@ class BrowserWebView(
 
         override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
             Uri.parse(url).host?.let { pageHost = it }
+            if (playingFrame != null) listener.onVideoPlaying(false)
+            videoFrame = null
+            playingFrame = null
+            topFrame = null
             listener.onPageStarted(url)
         }
 
@@ -153,6 +209,19 @@ class BrowserWebView(
     }
 
     private inner class Chrome : WebChromeClient() {
+        override fun onConsoleMessage(m: ConsoleMessage): Boolean {
+            if (m.messageLevel() == ConsoleMessage.MessageLevel.ERROR) Log.w(TAG, "console: ${m.message()} @${m.sourceId()}:${m.lineNumber()}")
+            return true
+        }
+
+        override fun onShowCustomView(view: View, callback: CustomViewCallback) =
+            listener.onEnterFullscreen(view, callback)
+
+        override fun onHideCustomView() = listener.onExitFullscreen()
+
+        // Black instead of the default grey play-button poster while a video loads.
+        override fun getDefaultVideoPoster(): Bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
+
         /**
          * One tab: a new window is either opened in this tab (a click to the same site) or dropped
          * (no click, an ad domain, or another site, which on video sites is almost always a popunder).
@@ -195,6 +264,8 @@ class BrowserWebView(
     }
 
     companion object {
+        private const val TAG = "BedBeamVideo"
+
         /** Common ad containers (Google, Yandex, AdFox and generic banners). Kept small and safe. */
         private const val AD_CSS =
             "ins.adsbygoogle,.adsbygoogle,[id^='google_ads_'],[id^='div-gpt-ad'],iframe[id^='google_ads_iframe']," +

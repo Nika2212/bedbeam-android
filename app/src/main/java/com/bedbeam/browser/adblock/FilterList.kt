@@ -55,12 +55,19 @@ class FilterList(private val block: LongArray, private val allow: LongArray) {
         fun load(file: File): FilterList? = try {
             DataInputStream(file.inputStream().buffered(1 shl 16)).use { inp ->
                 if (inp.readInt() != MAGIC) return null
-                val b = LongArray(inp.readInt()) { inp.readLong() }
-                val a = LongArray(inp.readInt()) { inp.readLong() }
+                // Layout: magic, block count, allow count, block hashes, allow hashes.
+                val nBlock = inp.readInt()
+                val nAllow = inp.readInt()
+                val expected = 12L + (nBlock.toLong() + nAllow) * 8
+                if (nBlock < 0 || nAllow < 0 || expected != file.length()) return null
+                val b = LongArray(nBlock) { inp.readLong() }
+                val a = LongArray(nAllow) { inp.readLong() }
                 FilterList(b, a)
             }
         } catch (e: Exception) {
             null
+        } catch (e: OutOfMemoryError) {
+            null // a damaged file must never crash the app; it is rebuilt by the next update
         }
 
         /** Parse adblock-syntax / hosts-format lists, keeping only whole-domain network rules. */

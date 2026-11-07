@@ -6,6 +6,8 @@ import android.os.Bundle
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
+import android.webkit.WebChromeClient
 import android.widget.FrameLayout
 import android.widget.Toast
 import com.bedbeam.browser.adblock.AdBlocker
@@ -19,9 +21,11 @@ import com.bedbeam.browser.ui.CrossMenu
 import com.bedbeam.browser.ui.EditSheet
 import com.bedbeam.browser.ui.Palette
 import com.bedbeam.browser.ui.StartScreen
+import com.bedbeam.browser.ui.VideoOsd
 import com.bedbeam.browser.web.BrowserWebView
 import com.bedbeam.browser.web.PointerController
 import com.bedbeam.browser.web.PointerView
+import com.bedbeam.browser.web.VideoKeys
 
 /**
  * One activity, one tab. Layers, bottom to top: the page (WebView + pointer), the start screen,
@@ -37,6 +41,14 @@ class MainActivity : Activity(), BrowserWebView.Listener {
     private lateinit var start: StartScreen
     private lateinit var pointerView: PointerView
     private lateinit var pointer: PointerController
+    private lateinit var fullscreenHost: FrameLayout
+    private lateinit var osd: VideoOsd
+    private lateinit var videoKeys: VideoKeys
+
+    private var fullscreenView: View? = null
+    private var fullscreenExit: WebChromeClient.CustomViewCallback? = null
+    private val inFullscreen get() = fullscreenView != null
+    private var videoPlaying = false
 
     private var web: BrowserWebView? = null
     /** Address of the page in the tab, kept even when the WebView is freed. */
@@ -70,6 +82,16 @@ class MainActivity : Activity(), BrowserWebView.Listener {
             onAddBookmark = ::openAddBookmark,
         )
         root.addView(start, match())
+        fullscreenHost = FrameLayout(this).apply {
+            setBackgroundColor(0xFF000000.toInt())
+            visibility = View.GONE
+        }
+        osd = VideoOsd(this)
+        fullscreenHost.addView(osd, match())
+        videoKeys = VideoKeys(osd, command = { cmd ->
+            web?.videoCommand(cmd) == true || (cmd == "toggle" && tapFullscreenCenter())
+        }, onHoldOk = ::openCrossMenu)
+        root.addView(fullscreenHost, match())
         setContentView(root)
         start.focusTile(0)
     }
@@ -94,6 +116,9 @@ class MainActivity : Activity(), BrowserWebView.Listener {
         }
 
     private fun freeWebView() {
+        if (inFullscreen) exitFullscreen()
+        videoPlaying = false
+        updateKeepScreenOn()
         web?.let {
             pageHost.removeView(it)
             it.release()
@@ -118,6 +143,80 @@ class MainActivity : Activity(), BrowserWebView.Listener {
             pageUrl = url
             history.add(url, title)
         }
+    }
+
+    // ---- full-screen video ----------------------------------------------------------------------
+
+    override fun onEnterFullscreen(view: View, exit: WebChromeClient.CustomViewCallback) {
+        if (inFullscreen) {
+            exit.onCustomViewHidden()
+            return
+        }
+        fullscreenView = view
+        fullscreenExit = exit
+        fullscreenHost.addView(view, 0, match())
+        fullscreenHost.visibility = View.VISIBLE
+        pointer.stop()
+        pointerView.visibility = View.GONE
+        updateKeepScreenOn()
+        web?.videoCommand("state")
+    }
+
+    override fun onExitFullscreen() = removeFullscreen()
+
+    /** Leave full screen from our side (Back, or leaving the page). */
+    private fun exitFullscreen() {
+        val exit = fullscreenExit
+        web?.videoCommand("exitfs")
+        removeFullscreen()
+        exit?.onCustomViewHidden()
+    }
+
+    private fun removeFullscreen() {
+        val v = fullscreenView ?: return
+        fullscreenView = null
+        fullscreenExit = null
+        fullscreenHost.removeView(v)
+        fullscreenHost.visibility = View.GONE
+        osd.hideNow()
+        pointerView.visibility = View.VISIBLE
+        updateKeepScreenOn()
+        web?.requestFocus()
+    }
+
+    override fun onVideoPlaying(playing: Boolean) {
+        videoPlaying = playing
+        updateKeepScreenOn()
+    }
+
+    override fun onVideoState(t: Double, d: Double, paused: Boolean) {
+        val afterToggle = videoKeys.consumeToggleFlag()
+        if (inFullscreen) videoKeys.onState(t, d, paused, afterToggle)
+    }
+
+    override fun onNoVideo() {
+        // OK found no <video> yet: click the middle of the player instead, which starts it in most players.
+        if (inFullscreen && videoKeys.consumeToggleFlag()) tapFullscreenCenter()
+    }
+
+    private fun tapFullscreenCenter(): Boolean {
+        val v = fullscreenView ?: return false
+        val x = v.width / 2f
+        val y = v.height / 2f
+        val t = android.os.SystemClock.uptimeMillis()
+        listOf(android.view.MotionEvent.ACTION_DOWN, android.view.MotionEvent.ACTION_UP).forEach { action ->
+            val e = android.view.MotionEvent.obtain(t, t + (if (action == android.view.MotionEvent.ACTION_UP) 50 else 0), action, x, y, 0)
+            e.source = android.view.InputDevice.SOURCE_TOUCHSCREEN
+            v.dispatchTouchEvent(e)
+            e.recycle()
+        }
+        return true
+    }
+
+    /** No screensaver while a video plays or is full screen. */
+    private fun updateKeepScreenOn() {
+        if (inFullscreen || videoPlaying) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
     override fun onRendererGone() {
@@ -258,7 +357,14 @@ class MainActivity : Activity(), BrowserWebView.Listener {
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         val menu = overlay as? CrossMenu
         if (menu != null && menu.handleKey(event)) return true
-        if (onPage && overlay == null && web != null && pointer.handleKey(event)) return true
+        if (overlay == null && inFullscreen && videoKeys.handleKey(event)) return true
+        if (onPage && overlay == null && web != null) {
+            if (event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE) {
+                if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) web?.videoCommand("toggle")
+                return true
+            }
+            if (pointer.handleKey(event)) return true
+        }
         return super.dispatchKeyEvent(event)
     }
 
@@ -266,6 +372,7 @@ class MainActivity : Activity(), BrowserWebView.Listener {
     override fun onBackPressed() {
         when {
             overlay != null -> overlayBack?.invoke()
+            inFullscreen -> exitFullscreen()
             onPage -> {
                 val w = web
                 if (w != null && w.canGoBack()) w.goBack() else showStart()
