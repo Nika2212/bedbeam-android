@@ -205,5 +205,6 @@ class CrossMenu(
         val ICON_BOOKMARK = R.drawable.ic_star
         val ICON_ADDRESS = R.drawable.ic_search
         val ICON_HOME = R.drawable.ic_home
+        val ICON_SHIELD = R.drawable.ic_shield
     }
 }

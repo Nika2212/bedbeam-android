@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.Toast
+import com.bedbeam.browser.adblock.AdBlocker
 import com.bedbeam.browser.data.Bookmark
 import com.bedbeam.browser.data.Bookmarks
 import com.bedbeam.browser.data.History
@@ -30,6 +31,7 @@ class MainActivity : Activity(), BrowserWebView.Listener {
 
     private lateinit var bookmarks: Bookmarks
     private lateinit var history: History
+    private lateinit var adBlocker: AdBlocker
     private lateinit var root: FrameLayout
     private lateinit var pageHost: FrameLayout
     private lateinit var start: StartScreen
@@ -51,6 +53,7 @@ class MainActivity : Activity(), BrowserWebView.Listener {
         super.onCreate(savedInstanceState)
         bookmarks = Bookmarks(this)
         history = History(this)
+        adBlocker = AdBlocker(this).also { it.start() }
 
         root = FrameLayout(this).apply { setBackgroundColor(Palette.BG) }
         pageHost = FrameLayout(this)
@@ -85,7 +88,7 @@ class MainActivity : Activity(), BrowserWebView.Listener {
     }
 
     private fun newWebView(): BrowserWebView =
-        BrowserWebView(this, this).also {
+        BrowserWebView(this, adBlocker, this).also {
             web = it
             pageHost.addView(it, 0, match())
         }
@@ -159,6 +162,8 @@ class MainActivity : Activity(), BrowserWebView.Listener {
         val w = web ?: return
         val url = pageUrl ?: w.url ?: return
         val bookmarked = bookmarks.all().any { it.url.trimEnd('/') == url.trimEnd('/') }
+        val host = UrlInput.displayHost(url)
+        val adOn = adBlocker.isEnabledFor(host)
         val arms = mapOf(
             CrossMenu.Dir.LEFT to listOf(
                 CrossMenu.Action("Back", CrossMenu.ICON_BACK) { if (w.canGoBack()) w.goBack() else showStart() },
@@ -178,8 +183,22 @@ class MainActivity : Activity(), BrowserWebView.Listener {
                 CrossMenu.Action("Address", CrossMenu.ICON_ADDRESS) { openAddress(url) },
                 CrossMenu.Action("Start screen", CrossMenu.ICON_HOME) { showStart() },
             ),
+            // Inner slot becomes "Switch to Links" in step 5.
+            CrossMenu.Dir.DOWN to listOf(
+                CrossMenu.Action(if (adOn) "Ad-block: On" else "Ad-block: Off", CrossMenu.ICON_SHIELD) {
+                    adBlocker.setEnabledFor(host, !adOn)
+                    w.refreshAdBoxHiding()
+                    w.reload()
+                    Toast.makeText(this, if (adOn) "Ad-block off for $host" else "Ad-block on for $host", Toast.LENGTH_SHORT).show()
+                },
+            ),
         )
-        val menu = CrossMenu(this, UrlInput.displayHost(url), "", arms, onClose = { closeOverlay() })
+        val sub = when {
+            !adOn -> "Ad-block off"
+            w.blockedCount == 1 -> "1 blocked"
+            else -> "${w.blockedCount} blocked"
+        }
+        val menu = CrossMenu(this, UrlInput.displayHost(url), sub, arms, onClose = { closeOverlay() })
         showOverlay(menu) { closeOverlay() }
     }
 
