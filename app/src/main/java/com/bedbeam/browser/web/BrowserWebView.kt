@@ -110,6 +110,9 @@ class BrowserWebView(
             userAgentString = userAgentString.replace("; wv)", ")").replace(" Version/4.0", "")
         }
 
+        // While BedBeam is in the background, let Android reclaim the page process before other apps.
+        setRendererPriorityPolicy(RENDERER_PRIORITY_IMPORTANT, true)
+
         webViewClient = Client()
         webChromeClient = Chrome()
         refreshAdBoxHiding()
@@ -158,15 +161,26 @@ class BrowserWebView(
 
     /** Free everything this WebView holds. Call instead of just dropping the reference. */
     fun release() {
+        releasing = true
         stopLoading()
+        // Chromium keeps the page's renderer process cached after destroy() (~150 MB on a video site).
+        // On a 1 GB device that memory is needed back now: end the process explicitly.
+        try {
+            webViewRenderProcess?.terminate()
+        } catch (e: Exception) {
+            Log.w(TAG, "could not end renderer", e)
+        }
         cosmetic?.remove()
         cosmetic = null
         webChromeClient = null
-        loadUrl("about:blank")
         onPause()
         removeAllViews()
         destroy()
     }
+
+    /** Set while [release] runs: the renderer exit it causes is expected, not a crash. */
+    @Volatile
+    private var releasing = false
 
     private fun sameSite(a: String?, b: String?) =
         a != null && b != null && AdBlocker.site(a) == AdBlocker.site(b)
@@ -213,7 +227,7 @@ class BrowserWebView(
         override fun onPageFinished(view: WebView, url: String) = listener.onPageFinished(url, view.title)
 
         override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
-            listener.onRendererGone()
+            if (!releasing) listener.onRendererGone()
             return true // handled: don't crash the app
         }
     }

@@ -194,6 +194,7 @@ class StartScreen(
             ellipsize = TextUtils.TruncateAt.END
             gravity = Gravity.CENTER
             setPadding(d.px(12), 0, d.px(12), 0)
+            textStyle(d, 20, Palette.TEXT, 600)
         }
         tile.addView(label, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply { topMargin = d.px(14) })
 
@@ -204,8 +205,7 @@ class StartScreen(
                 else -> rounded(Palette.SURFACE, d.f(18), d.px(1), 0xFF23272E.toInt())
             }
             mono.background = oval(if (has) Palette.BG else Palette.SURFACE3)
-            label.textStyle(d, 20, if (has) Palette.BG else Palette.TEXT, if (has) 600 else 500)
-            tile.elevation = if (has) d.f(14) else 0f
+            label.setTextColor(if (has) Palette.BG else Palette.TEXT)
             tile.focusScale(has)
         }
         style(false)
@@ -231,13 +231,15 @@ class StartScreen(
         }
         val icon = ImageView(context).apply { setImageResource(R.drawable.ic_plus) }
         tile.addView(icon, LayoutParams(d.px(32), d.px(32)))
-        val label = TextView(context).apply { text = "Add bookmark" }
+        val label = TextView(context).apply {
+            text = "Add bookmark"
+            textStyle(d, 20, Palette.MUTED, 600)
+        }
         tile.addView(label, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply { topMargin = d.px(14) })
         fun style(has: Boolean) {
             tile.background = if (has) rounded(Palette.TEXT, d.f(18)) else rounded(0, d.f(18), d.px(2), Palette.BORDER2, d.f(8))
             icon.imageTintList = ColorStateList.valueOf(if (has) Palette.BG else Palette.MUTED)
-            label.textStyle(d, 20, if (has) Palette.BG else Palette.MUTED, if (has) 600 else 500)
-            tile.elevation = if (has) d.f(14) else 0f
+            label.setTextColor(if (has) Palette.BG else Palette.MUTED)
             tile.focusScale(has)
         }
         style(false)

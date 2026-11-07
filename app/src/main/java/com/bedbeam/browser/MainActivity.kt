@@ -126,7 +126,7 @@ class MainActivity : Activity(), BrowserWebView.Listener {
         updateKeepScreenOn()
         web?.let {
             pageHost.removeView(it)
-            it.release()
+            it.release() // also ends the page's renderer process (~150 MB on a video site)
         }
         web = null
     }
