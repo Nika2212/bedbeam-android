@@ -1,6 +1,7 @@
 package com.bedbeam.browser.data
 
 import android.content.Context
+import com.bedbeam.browser.R
 
 /** User settings (settings screen), kept in SharedPreferences. */
 class Settings(context: Context) {
@@ -21,6 +22,11 @@ class Settings(context: Context) {
         get() = p.getBoolean("auto_fullscreen", false)
         set(v) = p.edit().putBoolean("auto_fullscreen", v).apply()
 
+    /** Index into [LANGUAGES]. Saved synchronously: the activity restarts right after a change. */
+    var language: Int
+        get() = p.getInt("language", 0).coerceIn(0, LANGUAGES.lastIndex)
+        set(v) { p.edit().putInt("language", v).commit() }
+
     var desktopMode: Boolean
         get() = p.getBoolean("desktop_mode", false)
         set(v) = p.edit().putBoolean("desktop_mode", v).apply()
@@ -35,6 +41,13 @@ class Settings(context: Context) {
             Engine("DuckDuckGo", "https://duckduckgo.com/?q="),
             Engine("Bing", "https://www.bing.com/search?q="),
         )
-        val POINTER_SPEEDS = listOf("Slow" to 0.6f, "Normal" to 1f, "Fast" to 1.5f)
+        val POINTER_SPEEDS = listOf(R.string.speed_slow to 0.6f, R.string.speed_normal to 1f, R.string.speed_fast to 1.5f)
+
+        /** UI languages: locale code (null = follow the system) and its name. Add new ones here. */
+        val LANGUAGES = listOf<Pair<String?, Int>>(null to R.string.lang_system, "en" to R.string.lang_en, "ru" to R.string.lang_ru)
+
+        /** The chosen UI language code, read before the activity exists (for attachBaseContext). */
+        fun languageCode(context: Context): String? =
+            LANGUAGES[context.getSharedPreferences("settings", Context.MODE_PRIVATE).getInt("language", 0).coerceIn(0, LANGUAGES.lastIndex)].first
     }
 }

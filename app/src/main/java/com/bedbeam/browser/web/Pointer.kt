@@ -1,10 +1,8 @@
 package com.bedbeam.browser.web
 
-import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
-import android.graphics.Path
 import android.os.SystemClock
 import android.view.Choreographer
 import android.view.InputDevice
@@ -17,23 +15,19 @@ import com.bedbeam.browser.ui.Dims
 import com.bedbeam.browser.ui.Palette
 import kotlin.math.min
 
-/** Draws the on-screen pointer (design: "Web page: pointer mode"). Never takes focus or touches. */
+/**
+ * Draws the on-screen pointer: a white dot with a black outline, centred on the point that gets
+ * clicked. Never takes focus or touches. Size and colours: [RADIUS], [OUTLINE], Palette.TEXT/BG.
+ */
 class PointerView(context: Context) : View(context) {
     private val d = Dims(context)
-    private val s = d.f(1.5f) // arrow scale: the 22×26 design icon at ~33×39 design px
-    private val arrow = Path().apply {
-        moveTo(0f, 0f); lineTo(17f * s, 11f * s); lineTo(9.5f * s, 12.6f * s); lineTo(6f * s, 21f * s); close()
-    }
+    private val radius = d.f(RADIUS)
     private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Palette.TEXT; style = Paint.Style.FILL }
     private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Palette.BG; style = Paint.Style.STROKE; strokeWidth = 1.6f * s; strokeJoin = Paint.Join.ROUND
-    }
-    private val ring = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Palette.ACCENT; style = Paint.Style.STROKE; strokeWidth = d.f(3)
+        color = Palette.BG; style = Paint.Style.STROKE; strokeWidth = d.f(OUTLINE)
     }
     var px = 0f; private set
     var py = 0f; private set
-    private var ringT = 0f // 0..1 click pulse progress, 0 = none
 
     init {
         isFocusable = false
@@ -46,30 +40,16 @@ class PointerView(context: Context) : View(context) {
         invalidate()
     }
 
-    fun pulse() {
-        ValueAnimator.ofFloat(0.01f, 1f).apply {
-            duration = 260
-            addUpdateListener { ringT = it.animatedValue as Float; invalidate() }
-            doOnEnd { ringT = 0f; invalidate() }
-            start()
-        }
-    }
-
     override fun onDraw(c: Canvas) {
-        if (ringT > 0f) {
-            ring.alpha = ((1f - ringT) * 220).toInt()
-            c.drawCircle(px, py, d.f(10 + 18 * ringT), ring)
-        }
-        c.save()
-        c.translate(px, py)
-        c.drawPath(arrow, fill)
-        c.drawPath(arrow, stroke)
-        c.restore()
+        c.drawCircle(px, py, radius, fill)
+        c.drawCircle(px, py, radius, stroke)
     }
 
-    private fun ValueAnimator.doOnEnd(block: () -> Unit) = addListener(object : android.animation.AnimatorListenerAdapter() {
-        override fun onAnimationEnd(animation: android.animation.Animator) = block()
-    })
+    companion object {
+        /** Dot radius and outline width, in design px. */
+        const val RADIUS = 9f
+        const val OUTLINE = 2.5f
+    }
 }
 
 /**
@@ -259,7 +239,6 @@ class PointerController(
             w.dispatchTouchEvent(upEv)
             upEv.recycle()
         }, TAP_MS)
-        view.pulse()
         show()
     }
 
@@ -270,7 +249,7 @@ class PointerController(
         // Speeds in design px per second (1280-wide screen).
         private const val NUDGE = 4f
         private const val START_SPEED = 260f
-        private const val ACCEL = 1400f
+        private const val ACCEL = 1050f
         private const val MAX_SPEED = 1300f
         private const val SCROLL_GAIN = 2.2f
     }

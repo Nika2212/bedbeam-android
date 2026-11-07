@@ -1,4 +1,116 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  All text shown by BedBeam. Translations live in values-<lang>/strings.xml (e.g. values-ru).
+  To add a language: copy this file to values-<code>/strings.xml, translate it, and add the
+  language to Settings.LANGUAGES. "translatable=false" entries are not translated.
+-->
 <resources>
-    <string name="app_name">BedBeam</string>
+    <string name="app_name" translatable="false">BedBeam</string>
+
+    <!-- Remote key names, shown in hint bars -->
+    <string name="key_ok">OK</string>
+    <string name="key_hold_ok">Hold OK</string>
+    <string name="key_back">Back</string>
+    <string name="key_arrow">Arrow</string>
+    <string name="key_arrows" translatable="false">← ↑ ↓ →</string>
+    <string name="key_up" translatable="false">↑</string>
+
+    <!-- Start screen -->
+    <string name="search_hint">Search or type a web address</string>
+    <string name="bookmarks_title">BOOKMARKS</string>
+    <string name="add_bookmark">Add bookmark</string>
+    <string name="settings">Settings</string>
+    <string name="hint_open">Open</string>
+    <string name="hint_edit_bookmark">Edit bookmark</string>
+    <string name="hint_address_bar">Address bar</string>
+    <string name="hint_exit">Exit</string>
+    <string name="hint_move_bookmark">Move bookmark</string>
+    <string name="hint_done">Done</string>
+
+    <!-- Address screen -->
+    <string name="enter_go">Enter = Go</string>
+    <string name="sug_open">Open</string>
+    <string name="sug_bookmark">Bookmark</string>
+    <string name="sug_history">History</string>
+    <string name="sug_search">Search</string>
+    <string name="search_for">Search for “%1$s”</string>
+
+    <!-- Bookmark actions and edit sheet -->
+    <string name="bm_open">Open</string>
+    <string name="bm_rename">Rename</string>
+    <string name="bm_move">Move (then use arrows)</string>
+    <string name="bm_remove">Remove</string>
+    <string name="rename_bookmark">Rename bookmark</string>
+    <string name="field_name">Name</string>
+    <string name="field_address">Address</string>
+    <string name="field_name_optional">Name (optional)</string>
+    <string name="save">Save</string>
+
+    <!-- Cross menu (hold OK) -->
+    <string name="menu_pick">Pick (press twice for outer)</string>
+    <string name="menu_do">Do it</string>
+    <string name="menu_close">Close</string>
+    <string name="menu_back">Back</string>
+    <string name="menu_forward">Forward</string>
+    <string name="menu_reload">Reload</string>
+    <string name="menu_bookmark">Bookmark</string>
+    <string name="menu_bookmarked">Bookmarked</string>
+    <string name="menu_address">Address</string>
+    <string name="menu_start">Start screen</string>
+    <string name="menu_to_pointer">Switch to Pointer</string>
+    <string name="menu_to_links">Switch to Links</string>
+    <string name="menu_adblock_on">Ad-block: On</string>
+    <string name="menu_adblock_off">Ad-block: Off</string>
+    <string name="center_adblock_off">Ad-block off</string>
+    <string name="blocked_count">%1$d blocked</string>
+
+    <!-- Messages -->
+    <string name="toast_bookmarked">Bookmarked</string>
+    <string name="toast_adblock_off">Ad-block off for %1$s</string>
+    <string name="toast_adblock_on">Ad-block on for %1$s</string>
+    <string name="dl_cant_save">This download can\'t be saved</string>
+    <string name="dl_started">Downloading %1$s to Downloads</string>
+    <string name="dl_failed">Download failed: %1$s</string>
+    <string name="no_file_picker">No file picker app on this device</string>
+    <string name="updating_lists">Updating ad lists…</string>
+    <string name="lists_updated">Ad lists updated</string>
+    <string name="lists_update_failed">Update failed, keeping the current lists</string>
+    <string name="data_cleared">History and site data cleared</string>
+
+    <!-- Settings -->
+    <string name="settings_footer">OK  change      Back  close</string>
+    <string name="s_language">Language</string>
+    <string name="s_language_hint">Language of BedBeam\'s own screens</string>
+    <string name="s_search">Search engine</string>
+    <string name="s_search_hint">Used by the address bar</string>
+    <string name="s_pointer">Pointer speed</string>
+    <string name="s_pointer_hint">How fast the pointer moves while an arrow is held</string>
+    <string name="s_autofs">Videos open full screen</string>
+    <string name="s_autofs_hint">When a video starts playing (works on most players)</string>
+    <string name="s_desktop">Desktop sites</string>
+    <string name="s_desktop_hint">Ask sites for their computer version</string>
+    <string name="s_adlists">Ad blocker lists</string>
+    <string name="s_adlists_hint">AdGuard DNS, Base and Russian · updated weekly</string>
+    <string name="ad_domains">%1$s domains</string>
+    <string name="s_clear">Clear history and site data</string>
+    <string name="s_clear_hint">History, cookies, logins, site storage and cache</string>
+    <string name="s_press_again">Press OK again</string>
+    <string name="s_about">About</string>
+    <string name="s_about_hint">Engine: Android System WebView (Chromium)</string>
+    <string name="on">On</string>
+    <string name="off">Off</string>
+    <string name="speed_slow">Slow</string>
+    <string name="speed_normal">Normal</string>
+    <string name="speed_fast">Fast</string>
+    <string name="lang_system">System</string>
+    <string name="lang_en" translatable="false">English</string>
+    <string name="lang_ru" translatable="false">Русский</string>
+
+    <!-- Full-screen video -->
+    <string name="osd_play">Play</string>
+    <string name="osd_pause">Pause</string>
+    <string name="osd_no_video">No video</string>
+    <string name="seek_s">%1$d s</string>
+    <string name="seek_min">%1$d min</string>
+    <string name="seek_min_s">%1$d min %2$d s</string>
 </resources>

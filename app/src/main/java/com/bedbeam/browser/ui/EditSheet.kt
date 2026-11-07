@@ -10,6 +10,7 @@ import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.bedbeam.browser.R
 
 /** Centered form for adding or renaming a bookmark. Back cancels. */
 @SuppressLint("ViewConstructor")
@@ -26,7 +27,7 @@ class EditSheet(
     private val inputs = mutableListOf<EditText>()
 
     init {
-        setBackgroundColor(0xBF0B0C0E.toInt())
+        setBackgroundColor(Palette.SCRIM)
         isClickable = true
 
         val panel = LinearLayout(context).apply {
@@ -69,7 +70,7 @@ class EditSheet(
         }
 
         val saveBtn = TextView(context).apply {
-            text = "Save"
+            text = context.getString(R.string.save)
             gravity = Gravity.CENTER
             isFocusable = true
             isClickable = true

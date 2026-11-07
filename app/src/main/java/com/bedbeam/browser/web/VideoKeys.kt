@@ -1,6 +1,7 @@
 package com.bedbeam.browser.web
 
 import android.view.KeyEvent
+import com.bedbeam.browser.R
 import com.bedbeam.browser.ui.VideoOsd
 import kotlin.math.abs
 
@@ -73,7 +74,7 @@ class VideoKeys(
     /** Reply from the page after a command: refresh the timeline (and the play/pause label). */
     fun onState(t: Double, d: Double, paused: Boolean, afterToggle: Boolean) {
         osd.setTime(t, d)
-        if (afterToggle) osd.flash(if (paused) "Pause" else "Play")
+        if (afterToggle) osd.flash(osd.context.getString(if (paused) R.string.osd_pause else R.string.osd_play))
     }
 
     private var toggled = false
@@ -81,8 +82,15 @@ class VideoKeys(
 
     private fun toggle() {
         toggled = true
-        if (!command("toggle")) osd.flash("No video")
+        if (!command("toggle")) osd.flash(osd.context.getString(R.string.osd_no_video))
     }
 
-    private fun formatSeek(sec: Int) = if (sec >= 60) "${sec / 60} min" + (if (sec % 60 != 0) " ${sec % 60} s" else "") else "$sec s"
+    private fun formatSeek(sec: Int): String {
+        val c = osd.context
+        return when {
+            sec < 60 -> c.getString(R.string.seek_s, sec)
+            sec % 60 == 0 -> c.getString(R.string.seek_min, sec / 60)
+            else -> c.getString(R.string.seek_min_s, sec / 60, sec % 60)
+        }
+    }
 }

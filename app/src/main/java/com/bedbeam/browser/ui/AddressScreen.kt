@@ -29,11 +29,11 @@ class AddressScreen(
     private val onGo: (String) -> Unit,
 ) : LinearLayout(context) {
 
-    private enum class Kind(val icon: Int, val tag: String) {
-        GO(R.drawable.ic_arrow_right, "Open"),
-        BOOKMARK(R.drawable.ic_star, "Bookmark"),
-        HISTORY(R.drawable.ic_history, "History"),
-        SEARCH(R.drawable.ic_search, "Search"),
+    private enum class Kind(val icon: Int, val tag: Int) {
+        GO(R.drawable.ic_arrow_right, R.string.sug_open),
+        BOOKMARK(R.drawable.ic_star, R.string.sug_bookmark),
+        HISTORY(R.drawable.ic_history, R.string.sug_history),
+        SEARCH(R.drawable.ic_search, R.string.sug_search),
     }
 
     private data class Suggestion(val kind: Kind, val title: String, val sub: String, val url: String)
@@ -65,7 +65,7 @@ class AddressScreen(
             setPadding(d.px(16), 0, d.px(16), 0)
             textStyle(d, 22, Palette.BG, 500)
             setHintTextColor(Palette.ON_LIGHT_MUTED)
-            hint = "Search or type a web address"
+            hint = context.getString(R.string.search_hint)
             isSingleLine = true
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
             imeOptions = EditorInfo.IME_ACTION_GO or EditorInfo.IME_FLAG_NO_EXTRACT_UI or EditorInfo.IME_FLAG_NO_FULLSCREEN
@@ -85,7 +85,7 @@ class AddressScreen(
         }
         field.addView(input, LayoutParams(0, LayoutParams.MATCH_PARENT, 1f))
         field.addView(TextView(context).apply {
-            text = "Enter = Go"
+            text = context.getString(R.string.enter_go)
             textStyle(d, 16, Palette.ON_LIGHT_MUTED)
         })
         addView(field, LayoutParams(LayoutParams.MATCH_PARENT, d.px(68)))
@@ -141,7 +141,7 @@ class AddressScreen(
             .forEach { add(Suggestion(Kind.BOOKMARK, it.name, UrlInput.displayHost(it.url), it.url)) }
         history.all().filter { it.title.contains(q, true) || it.url.contains(q, true) }.take(3)
             .forEach { add(Suggestion(Kind.HISTORY, it.title, it.url.removePrefix("https://").removePrefix("http://"), it.url)) }
-        add(Suggestion(Kind.SEARCH, "Search for “$q”", UrlInput.engine.name, UrlInput.searchUrl(q)))
+        add(Suggestion(Kind.SEARCH, context.getString(R.string.search_for, q), UrlInput.engine.name, UrlInput.searchUrl(q)))
         return out.take(5)
     }
 
@@ -166,7 +166,7 @@ class AddressScreen(
             textStyle(d, 18, Palette.MUTED)
         }, LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = d.px(18) })
         addView(TextView(context).apply {
-            text = s.kind.tag
+            text = context.getString(s.kind.tag)
             textStyle(d, 15, Palette.MUTED)
         }, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply { marginStart = d.px(18) })
         fun style(has: Boolean) {

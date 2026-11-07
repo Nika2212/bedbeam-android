@@ -4,8 +4,12 @@ import android.app.Activity
 import android.app.DownloadManager
 import android.content.ActivityNotFoundException
 import android.content.ComponentCallbacks2
+import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.net.Uri
+import android.os.LocaleList
+import java.util.Locale
 import android.os.Bundle
 import android.os.Environment
 import android.webkit.CookieManager
@@ -81,6 +85,7 @@ class MainActivity : Activity(), BrowserWebView.Listener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Palette.load(this) // colours from res/values/colors.xml, before any screen is built
         bookmarks = Bookmarks(this)
         history = History(this)
         adBlocker = AdBlocker(this).also { it.start() }
@@ -106,7 +111,7 @@ class MainActivity : Activity(), BrowserWebView.Listener {
         pointer.speedFactor = settings.pointerSpeedFactor
         root.addView(start, match())
         fullscreenHost = FrameLayout(this).apply {
-            setBackgroundColor(0xFF000000.toInt())
+            setBackgroundColor(Palette.VIDEO_BG)
             visibility = View.GONE
         }
         osd = VideoOsd(this)
@@ -136,6 +141,7 @@ class MainActivity : Activity(), BrowserWebView.Listener {
         BrowserWebView(this, adBlocker, this, settings.desktopMode).also {
             web = it
             pageHost.addView(it, 0, match())
+            reapplyLanguage()
         }
 
     private fun freeWebView() {
@@ -218,7 +224,7 @@ class MainActivity : Activity(), BrowserWebView.Listener {
     override fun onDownload(url: String, userAgent: String, contentDisposition: String?, mimeType: String?) {
         val uri = Uri.parse(url)
         if (uri.scheme != "http" && uri.scheme != "https") {
-            Toast.makeText(this, "This download can't be saved", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, R.string.dl_cant_save, Toast.LENGTH_SHORT).show()
             return
         }
         val name = URLUtil.guessFileName(url, contentDisposition, mimeType)
@@ -231,9 +237,9 @@ class MainActivity : Activity(), BrowserWebView.Listener {
                 .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, name)
             CookieManager.getInstance().getCookie(url)?.let { req.addRequestHeader("Cookie", it) }
             (getSystemService(DOWNLOAD_SERVICE) as DownloadManager).enqueue(req)
-            Toast.makeText(this, "Downloading $name to Downloads", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.dl_started, name), Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
-            Toast.makeText(this, "Download failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.dl_failed, e.message ?: ""), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -248,7 +254,7 @@ class MainActivity : Activity(), BrowserWebView.Listener {
             true
         } catch (e: ActivityNotFoundException) {
             fileCallback = null
-            Toast.makeText(this, "No file picker app on this device", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, R.string.no_file_picker, Toast.LENGTH_SHORT).show()
             false
         }
     }
@@ -264,51 +270,83 @@ class MainActivity : Activity(), BrowserWebView.Listener {
 
     // ---- settings ---------------------------------------------------------------------------
 
+    // ---- language -------------------------------------------------------------------------------
+
+    /** Apply the language chosen in settings (or keep the system's) before any screen is built. */
+    override fun attachBaseContext(base: Context) = super.attachBaseContext(localized(base))
+
+    private fun localized(base: Context): Context {
+        val code = Settings.languageCode(base) ?: return base
+        val cfg = Configuration(base.resources.configuration)
+        cfg.setLocales(LocaleList(Locale.forLanguageTag(code)))
+        return base.createConfigurationContext(cfg)
+    }
+
+    /** Creating a WebView can reset the app's resources to the system language: put ours back. */
+    private fun reapplyLanguage() {
+        val code = Settings.languageCode(this) ?: return
+        val cfg = Configuration(resources.configuration)
+        cfg.setLocales(LocaleList(Locale.forLanguageTag(code)))
+        @Suppress("DEPRECATION")
+        resources.updateConfiguration(cfg, resources.displayMetrics)
+    }
+
+    private fun uiLocale(): Locale = resources.configuration.locales[0]
+
+    private fun onOff(on: Boolean) = getString(if (on) R.string.on else R.string.off)
+
+    // ---- settings screen ---------------------------------------------------------------------------
+
     private fun openSettings() {
         var confirmClear = false
         lateinit var screen: SettingsScreen
         val rows = listOf(
-            SettingsScreen.Row("Search engine", "Used by the address bar", { settings.engine.name }) {
+            SettingsScreen.Row(getString(R.string.s_language), getString(R.string.s_language_hint),
+                { getString(Settings.LANGUAGES[settings.language].second) }) {
+                settings.language = (settings.language + 1) % Settings.LANGUAGES.size
+                recreate() // rebuild every screen in the new language
+            },
+            SettingsScreen.Row(getString(R.string.s_search), getString(R.string.s_search_hint), { settings.engine.name }) {
                 settings.searchEngine = (settings.searchEngine + 1) % Settings.ENGINES.size
                 UrlInput.engine = settings.engine
             },
-            SettingsScreen.Row("Pointer speed", "How fast the pointer moves while an arrow is held",
-                { Settings.POINTER_SPEEDS[settings.pointerSpeed].first }) {
+            SettingsScreen.Row(getString(R.string.s_pointer), getString(R.string.s_pointer_hint),
+                { getString(Settings.POINTER_SPEEDS[settings.pointerSpeed].first) }) {
                 settings.pointerSpeed = (settings.pointerSpeed + 1) % Settings.POINTER_SPEEDS.size
                 pointer.speedFactor = settings.pointerSpeedFactor
             },
-            SettingsScreen.Row("Videos open full screen", "When a video starts playing (works on most players)",
-                { if (settings.autoFullscreen) "On" else "Off" }) {
+            SettingsScreen.Row(getString(R.string.s_autofs), getString(R.string.s_autofs_hint),
+                { onOff(settings.autoFullscreen) }) {
                 settings.autoFullscreen = !settings.autoFullscreen
             },
-            SettingsScreen.Row("Desktop sites", "Ask sites for their computer version",
-                { if (settings.desktopMode) "On" else "Off" }) {
+            SettingsScreen.Row(getString(R.string.s_desktop), getString(R.string.s_desktop_hint),
+                { onOff(settings.desktopMode) }) {
                 settings.desktopMode = !settings.desktopMode
                 web?.setDesktopMode(settings.desktopMode)
             },
-            SettingsScreen.Row("Ad blocker lists", "AdGuard DNS, Base and Russian · updated weekly",
+            SettingsScreen.Row(getString(R.string.s_adlists), getString(R.string.s_adlists_hint),
                 {
-                    val n = String.format(java.util.Locale.US, "%,d domains", adBlocker.domainCount)
+                    val n = getString(R.string.ad_domains, String.format(uiLocale(), "%,d", adBlocker.domainCount))
                     val at = adBlocker.updatedAt
-                    if (at == 0L) n else "$n · " + java.text.SimpleDateFormat("d MMM", java.util.Locale.US).format(java.util.Date(at))
+                    if (at == 0L) n else "$n · " + java.text.SimpleDateFormat("d MMM", uiLocale()).format(java.util.Date(at))
                 }) {
-                Toast.makeText(this, "Updating ad lists…", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, R.string.updating_lists, Toast.LENGTH_SHORT).show()
                 adBlocker.updateNow { ok ->
-                    Toast.makeText(this, if (ok) "Ad lists updated" else "Update failed, keeping the current lists", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, if (ok) R.string.lists_updated else R.string.lists_update_failed, Toast.LENGTH_SHORT).show()
                     screen.refresh()
                 }
             },
-            SettingsScreen.Row("Clear history and site data", "History, cookies, logins, site storage and cache",
-                { if (confirmClear) "Press OK again" else "" }) {
+            SettingsScreen.Row(getString(R.string.s_clear), getString(R.string.s_clear_hint),
+                { if (confirmClear) getString(R.string.s_press_again) else "" }) {
                 if (!confirmClear) {
                     confirmClear = true
                 } else {
                     confirmClear = false
                     clearBrowsingData()
-                    Toast.makeText(this, "History and site data cleared", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, R.string.data_cleared, Toast.LENGTH_SHORT).show()
                 }
             },
-            SettingsScreen.Row("About", "Engine: Android System WebView (Chromium)",
+            SettingsScreen.Row(getString(R.string.s_about), getString(R.string.s_about_hint),
                 { "BedBeam ${BuildConfig.VERSION_NAME} · Chromium ${WebViewCompat.getCurrentWebViewPackage(this)?.versionName?.substringBefore('.') ?: "?"}" }) {},
         )
         screen = SettingsScreen(this, rows)
@@ -348,6 +386,17 @@ class MainActivity : Activity(), BrowserWebView.Listener {
             pointerView.visibility = View.VISIBLE
             pointer.ensurePlaced()
         }
+    }
+
+    override fun onEditableFocused() {
+        val w = web ?: return
+        if (overlay != null) return
+        // The field got focus, but the keyboard only opens if the WebView itself holds focus.
+        if (!w.hasFocus()) w.requestFocus()
+        w.postDelayed({
+            (getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager)
+                .showSoftInput(w, 0)
+        }, 120)
     }
 
     override fun onLinkTarget(x: Double, y: Double, viewportWidth: Double) {
@@ -399,6 +448,10 @@ class MainActivity : Activity(), BrowserWebView.Listener {
         focusBeforeOverlay = currentFocus
         overlay = view
         overlayBack = onBack
+        // Screens under the overlay must not take focus: arrows would otherwise jump to
+        // invisible buttons behind it (e.g. from one settings row to the start screen's search).
+        start.descendantFocusability = ViewGroup.FOCUS_BLOCK_DESCENDANTS
+        pageHost.descendantFocusability = ViewGroup.FOCUS_BLOCK_DESCENDANTS
         root.addView(view, match())
     }
 
@@ -409,6 +462,8 @@ class MainActivity : Activity(), BrowserWebView.Listener {
         root.removeView(v)
         overlay = null
         overlayBack = null
+        start.descendantFocusability = ViewGroup.FOCUS_AFTER_DESCENDANTS
+        pageHost.descendantFocusability = ViewGroup.FOCUS_AFTER_DESCENDANTS
         if (restoreFocus) focusBeforeOverlay?.takeIf { it.isAttachedToWindow }?.requestFocus()
             ?: if (!onPage) start.restoreFocus() else web?.requestFocus()
         focusBeforeOverlay = null
@@ -428,38 +483,37 @@ class MainActivity : Activity(), BrowserWebView.Listener {
         val adOn = adBlocker.isEnabledFor(host)
         val arms = mapOf(
             CrossMenu.Dir.LEFT to listOf(
-                CrossMenu.Action("Back", CrossMenu.ICON_BACK) { if (w.canGoBack()) w.goBack() else showStart() },
-                CrossMenu.Action("Forward", CrossMenu.ICON_FORWARD, enabled = w.canGoForward()) { w.goForward() },
+                CrossMenu.Action(getString(R.string.menu_back), CrossMenu.ICON_BACK) { if (w.canGoBack()) w.goBack() else showStart() },
+                CrossMenu.Action(getString(R.string.menu_forward), CrossMenu.ICON_FORWARD, enabled = w.canGoForward()) { w.goForward() },
             ),
             CrossMenu.Dir.RIGHT to listOf(
-                CrossMenu.Action("Reload", CrossMenu.ICON_RELOAD) { w.reload() },
-                CrossMenu.Action(if (bookmarked) "Bookmarked" else "Bookmark", CrossMenu.ICON_BOOKMARK, enabled = !bookmarked) {
+                CrossMenu.Action(getString(R.string.menu_reload), CrossMenu.ICON_RELOAD) { w.reload() },
+                CrossMenu.Action(getString(if (bookmarked) R.string.menu_bookmarked else R.string.menu_bookmark), CrossMenu.ICON_BOOKMARK, enabled = !bookmarked) {
                     val title = w.title?.takeIf { it.isNotBlank() && !it.startsWith("http") }
                         ?: UrlInput.displayHost(url)
                     bookmarks.add(Bookmark(title.take(40), url))
                     start.render()
-                    Toast.makeText(this, "Bookmarked", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, R.string.toast_bookmarked, Toast.LENGTH_SHORT).show()
                 },
             ),
             CrossMenu.Dir.UP to listOf(
-                CrossMenu.Action("Address", CrossMenu.ICON_ADDRESS) { openAddress(url) },
-                CrossMenu.Action("Start screen", CrossMenu.ICON_HOME) { showStart() },
+                CrossMenu.Action(getString(R.string.menu_address), CrossMenu.ICON_ADDRESS) { openAddress(url) },
+                CrossMenu.Action(getString(R.string.menu_start), CrossMenu.ICON_HOME) { showStart() },
             ),
             CrossMenu.Dir.DOWN to listOf(
-                if (linkMode) CrossMenu.Action("Switch to Pointer", CrossMenu.ICON_POINTER) { setLinkMode(false) }
-                else CrossMenu.Action("Switch to Links", CrossMenu.ICON_LINK) { setLinkMode(true) },
-                CrossMenu.Action(if (adOn) "Ad-block: On" else "Ad-block: Off", CrossMenu.ICON_SHIELD) {
+                if (linkMode) CrossMenu.Action(getString(R.string.menu_to_pointer), CrossMenu.ICON_POINTER) { setLinkMode(false) }
+                else CrossMenu.Action(getString(R.string.menu_to_links), CrossMenu.ICON_LINK) { setLinkMode(true) },
+                CrossMenu.Action(getString(if (adOn) R.string.menu_adblock_on else R.string.menu_adblock_off), CrossMenu.ICON_SHIELD) {
                     adBlocker.setEnabledFor(host, !adOn)
                     w.refreshAdBoxHiding()
                     w.reload()
-                    Toast.makeText(this, if (adOn) "Ad-block off for $host" else "Ad-block on for $host", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, getString(if (adOn) R.string.toast_adblock_off else R.string.toast_adblock_on, host), Toast.LENGTH_SHORT).show()
                 },
             ),
         )
         val sub = when {
-            !adOn -> "Ad-block off"
-            w.blockedCount == 1 -> "1 blocked"
-            else -> "${w.blockedCount} blocked"
+            !adOn -> getString(R.string.center_adblock_off)
+            else -> getString(R.string.blocked_count, w.blockedCount)
         }
         val menu = CrossMenu(this, UrlInput.displayHost(url), sub, arms, onClose = { closeOverlay() })
         showOverlay(menu) { closeOverlay() }
@@ -487,7 +541,7 @@ class MainActivity : Activity(), BrowserWebView.Listener {
 
     private fun openRename(index: Int) {
         val b = bookmarks.all().getOrNull(index) ?: return
-        val sheet = EditSheet(this, "Rename bookmark", listOf(EditSheet.Field("Name", b.name))) { values ->
+        val sheet = EditSheet(this, getString(R.string.rename_bookmark), listOf(EditSheet.Field(getString(R.string.field_name), b.name))) { values ->
             val name = values[0].ifBlank { b.name }
             bookmarks.update(index, b.copy(name = name))
             closeOverlay(restoreFocus = false)
@@ -499,8 +553,8 @@ class MainActivity : Activity(), BrowserWebView.Listener {
 
     private fun openAddBookmark() {
         val sheet = EditSheet(
-            this, "Add bookmark",
-            listOf(EditSheet.Field("Address", "", isUrl = true), EditSheet.Field("Name (optional)", "")),
+            this, getString(R.string.add_bookmark),
+            listOf(EditSheet.Field(getString(R.string.field_address), "", isUrl = true), EditSheet.Field(getString(R.string.field_name_optional), "")),
         ) { values ->
             val url = UrlInput.toUrl(values[0])
             if (url.isNotBlank()) {

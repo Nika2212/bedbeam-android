@@ -27,7 +27,7 @@ class BookmarkActions(
     private val first: LinearLayout
 
     init {
-        setBackgroundColor(0xBF0B0C0E.toInt()) // dim the start screen behind
+        setBackgroundColor(Palette.SCRIM) // dim the start screen behind
         isClickable = true
 
         val sheet = LinearLayout(context).apply {
@@ -54,11 +54,11 @@ class BookmarkActions(
         head.addView(names, LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = d.px(18) })
         sheet.addView(head)
 
-        first = action(R.drawable.ic_arrow_right, "Open", Palette.TEXT, onOpen)
+        first = action(R.drawable.ic_arrow_right, context.getString(R.string.bm_open), Palette.TEXT, onOpen)
         sheet.addView(first, actionParams(28))
-        sheet.addView(action(R.drawable.ic_edit, "Rename", Palette.TEXT, onRename), actionParams(6))
-        sheet.addView(action(R.drawable.ic_move, "Move (then use arrows)", Palette.TEXT, onMove), actionParams(6))
-        sheet.addView(action(R.drawable.ic_delete, "Remove", Palette.DANGER, onRemove), actionParams(6))
+        sheet.addView(action(R.drawable.ic_edit, context.getString(R.string.bm_rename), Palette.TEXT, onRename), actionParams(6))
+        sheet.addView(action(R.drawable.ic_move, context.getString(R.string.bm_move), Palette.TEXT, onMove), actionParams(6))
+        sheet.addView(action(R.drawable.ic_delete, context.getString(R.string.bm_remove), Palette.DANGER, onRemove), actionParams(6))
     }
 
     fun focusFirst() = first.requestFocus()

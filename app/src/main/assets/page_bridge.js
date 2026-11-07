@@ -157,6 +157,21 @@
     state(v);
   };
 
+  // ---- text fields: make sure the on-screen keyboard opens ----------------------------------
+  function editable(el) {
+    if (!el || !el.tagName) return false;
+    if (el.isContentEditable) return true;
+    var t = el.tagName;
+    if (t === 'TEXTAREA') return !el.readOnly && !el.disabled;
+    if (t !== 'INPUT') return false;
+    var type = (el.type || 'text').toLowerCase();
+    return !el.readOnly && !el.disabled &&
+      ['text', 'search', 'email', 'url', 'tel', 'password', 'number'].indexOf(type) >= 0;
+  }
+  document.addEventListener('focusin', function (e) { if (editable(e.target)) send({ type: 'edit' }); }, true);
+  // Clicking a field that already has focus fires no focusin, but the keyboard may be closed.
+  document.addEventListener('click', function (e) { if (editable(e.target)) send({ type: 'edit' }); }, true);
+
   document.addEventListener('loadedmetadata', function (e) {
     if (e.target && e.target.tagName === 'VIDEO') send({ type: 'video' });
   }, true);

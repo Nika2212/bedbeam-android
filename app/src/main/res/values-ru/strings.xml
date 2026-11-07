@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Названия кнопок пульта -->
+    <string name="key_ok">OK</string>
+    <string name="key_hold_ok">Удерживать OK</string>
+    <string name="key_back">Назад</string>
+    <string name="key_arrow">Стрелка</string>
+
+    <!-- Главный экран -->
+    <string name="search_hint">Поиск или адрес сайта</string>
+    <string name="bookmarks_title">ЗАКЛАДКИ</string>
+    <string name="add_bookmark">Добавить закладку</string>
+    <string name="settings">Настройки</string>
+    <string name="hint_open">Открыть</string>
+    <string name="hint_edit_bookmark">Изменить закладку</string>
+    <string name="hint_address_bar">Адресная строка</string>
+    <string name="hint_exit">Выход</string>
+    <string name="hint_move_bookmark">Переместить закладку</string>
+    <string name="hint_done">Готово</string>
+
+    <!-- Адресная строка -->
+    <string name="enter_go">Enter = Перейти</string>
+    <string name="sug_open">Открыть</string>
+    <string name="sug_bookmark">Закладка</string>
+    <string name="sug_history">История</string>
+    <string name="sug_search">Поиск</string>
+    <string name="search_for">Искать «%1$s»</string>
+
+    <!-- Действия с закладкой -->
+    <string name="bm_open">Открыть</string>
+    <string name="bm_rename">Переименовать</string>
+    <string name="bm_move">Переместить (стрелками)</string>
+    <string name="bm_remove">Удалить</string>
+    <string name="rename_bookmark">Переименовать закладку</string>
+    <string name="field_name">Название</string>
+    <string name="field_address">Адрес</string>
+    <string name="field_name_optional">Название (необязательно)</string>
+    <string name="save">Сохранить</string>
+
+    <!-- Меню (удерживать OK) -->
+    <string name="menu_pick">Выбор (дважды — дальний пункт)</string>
+    <string name="menu_do">Выполнить</string>
+    <string name="menu_close">Закрыть</string>
+    <string name="menu_back">Назад</string>
+    <string name="menu_forward">Вперёд</string>
+    <string name="menu_reload">Обновить</string>
+    <string name="menu_bookmark">В закладки</string>
+    <string name="menu_bookmarked">В закладках</string>
+    <string name="menu_address">Адрес</string>
+    <string name="menu_start">Главный экран</string>
+    <string name="menu_to_pointer">Режим указателя</string>
+    <string name="menu_to_links">Режим ссылок</string>
+    <string name="menu_adblock_on">Блокировка: вкл</string>
+    <string name="menu_adblock_off">Блокировка: выкл</string>
+    <string name="center_adblock_off">Блокировка выкл.</string>
+    <string name="blocked_count">Заблокировано: %1$d</string>
+
+    <!-- Сообщения -->
+    <string name="toast_bookmarked">Добавлено в закладки</string>
+    <string name="toast_adblock_off">Блокировка рекламы выключена для %1$s</string>
+    <string name="toast_adblock_on">Блокировка рекламы включена для %1$s</string>
+    <string name="dl_cant_save">Этот файл нельзя сохранить</string>
+    <string name="dl_started">Загрузка %1$s в «Загрузки»</string>
+    <string name="dl_failed">Ошибка загрузки: %1$s</string>
+    <string name="no_file_picker">На устройстве нет приложения для выбора файлов</string>
+    <string name="updating_lists">Обновление списков…</string>
+    <string name="lists_updated">Списки обновлены</string>
+    <string name="lists_update_failed">Не удалось обновить, оставлены текущие списки</string>
+    <string name="data_cleared">История и данные сайтов удалены</string>
+
+    <!-- Настройки -->
+    <string name="settings_footer">OK  изменить      Назад  закрыть</string>
+    <string name="s_language">Язык</string>
+    <string name="s_language_hint">Язык экранов BedBeam</string>
+    <string name="s_search">Поисковая система</string>
+    <string name="s_search_hint">Для адресной строки</string>
+    <string name="s_pointer">Скорость указателя</string>
+    <string name="s_pointer_hint">Как быстро движется указатель при удержании стрелки</string>
+    <string name="s_autofs">Видео на весь экран</string>
+    <string name="s_autofs_hint">Когда видео начинает играть (работает в большинстве плееров)</string>
+    <string name="s_desktop">Версия для компьютера</string>
+    <string name="s_desktop_hint">Запрашивать у сайтов полную версию</string>
+    <string name="s_adlists">Списки блокировки рекламы</string>
+    <string name="s_adlists_hint">AdGuard DNS, Base и Russian · обновляются раз в неделю</string>
+    <string name="ad_domains">Доменов: %1$s</string>
+    <string name="s_clear">Очистить историю и данные сайтов</string>
+    <string name="s_clear_hint">История, cookie, входы, хранилище сайтов и кэш</string>
+    <string name="s_press_again">Нажмите OK ещё раз</string>
+    <string name="s_about">О приложении</string>
+    <string name="s_about_hint">Движок: Android System WebView (Chromium)</string>
+    <string name="on">Вкл</string>
+    <string name="off">Выкл</string>
+    <string name="speed_slow">Медленно</string>
+    <string name="speed_normal">Обычно</string>
+    <string name="speed_fast">Быстро</string>
+    <string name="lang_system">Как в системе</string>
+
+    <!-- Видео на весь экран -->
+    <string name="osd_play">Воспроизведение</string>
+    <string name="osd_pause">Пауза</string>
+    <string name="osd_no_video">Нет видео</string>
+    <string name="seek_s">%1$d с</string>
+    <string name="seek_min">%1$d мин</string>
+    <string name="seek_min_s">%1$d мин %2$d с</string>
+</resources>

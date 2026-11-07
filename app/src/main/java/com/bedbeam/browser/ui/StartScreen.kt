@@ -37,6 +37,8 @@ class StartScreen(
     private var moveIndex = -1
     private var lastFocused = 0
 
+    private fun s(id: Int) = context.getString(id)
+
     private val tileW = (1280 - 144 - 3 * 24) / 4
     private val tileH = 148
 
@@ -56,7 +58,7 @@ class StartScreen(
         })
 
         addView(TextView(context).apply {
-            text = "BOOKMARKS"
+            text = s(R.string.bookmarks_title)
             letterSpacing = 0.12f
             textStyle(d, 15, Palette.MUTED, 600)
         }, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply { topMargin = d.px(32) })
@@ -153,7 +155,7 @@ class StartScreen(
 
     private fun settingsButton() = ImageView(context).apply {
         setImageResource(R.drawable.ic_settings)
-        contentDescription = "Settings"
+        contentDescription = s(R.string.settings)
         isFocusable = true
         isClickable = true
         scaleType = ImageView.ScaleType.CENTER_INSIDE
@@ -168,7 +170,7 @@ class StartScreen(
     }
 
     private fun searchPill() = TextView(context).apply {
-        text = "Search or type a web address"
+        text = s(R.string.search_hint)
         gravity = Gravity.CENTER_VERTICAL
         isFocusable = true
         isClickable = true
@@ -220,7 +222,7 @@ class StartScreen(
         fun style(has: Boolean) {
             tile.background = when {
                 has -> rounded(Palette.TEXT, d.f(18), if (moving) d.px(4) else 0, Palette.ACCENT)
-                else -> rounded(Palette.SURFACE, d.f(18), d.px(1), 0xFF23272E.toInt())
+                else -> rounded(Palette.SURFACE, d.f(18), d.px(1), Palette.SURFACE2)
             }
             mono.background = oval(if (has) Palette.BG else Palette.SURFACE3)
             label.setTextColor(if (has) Palette.BG else Palette.TEXT)
@@ -250,7 +252,7 @@ class StartScreen(
         val icon = ImageView(context).apply { setImageResource(R.drawable.ic_plus) }
         tile.addView(icon, LayoutParams(d.px(32), d.px(32)))
         val label = TextView(context).apply {
-            text = "Add bookmark"
+            text = s(R.string.add_bookmark)
             textStyle(d, 20, Palette.MUTED, 600)
         }
         tile.addView(label, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply { topMargin = d.px(14) })
@@ -272,9 +274,10 @@ class StartScreen(
     private fun updateHints() {
         hints.removeAllViews()
         val items = if (moveIndex >= 0) {
-            listOf("← ↑ ↓ →" to "Move bookmark", "OK" to "Done")
+            listOf(s(R.string.key_arrows) to s(R.string.hint_move_bookmark), s(R.string.key_ok) to s(R.string.hint_done))
         } else {
-            listOf("OK" to "Open", "Hold OK" to "Edit bookmark", "↑" to "Address bar", "Back" to "Exit")
+            listOf(s(R.string.key_ok) to s(R.string.hint_open), s(R.string.key_hold_ok) to s(R.string.hint_edit_bookmark),
+                s(R.string.key_up) to s(R.string.hint_address_bar), s(R.string.key_back) to s(R.string.hint_exit))
         }
         items.forEachIndexed { i, (key, what) ->
             hints.addView(hint(key, what), LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply {

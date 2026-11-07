@@ -43,7 +43,7 @@ class CrossMenu(
     private inner class Pill(val root: LinearLayout, val icon: ImageView, val text: TextView, val action: Action, val inner: Boolean)
 
     init {
-        setBackgroundColor(0xC70B0C0E.toInt()) // dim the page (78%)
+        setBackgroundColor(Palette.SCRIM_STRONG) // dim the page (78%)
         isClickable = true
         clipChildren = false
 
@@ -88,7 +88,11 @@ class CrossMenu(
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
         }
-        listOf("Arrow" to "Pick (press twice for outer)", "OK" to "Do it", "Back" to "Close").forEachIndexed { i, (k, what) ->
+        listOf(
+            context.getString(R.string.key_arrow) to context.getString(R.string.menu_pick),
+            context.getString(R.string.key_ok) to context.getString(R.string.menu_do),
+            context.getString(R.string.key_back) to context.getString(R.string.menu_close),
+        ).forEachIndexed { i, (k, what) ->
             hints.addView(hint(k, what), LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply {
                 if (i > 0) marginStart = d.px(32)
             })
@@ -155,7 +159,7 @@ class CrossMenu(
             val on = key == sel
             p.root.background = when {
                 on -> rounded(Palette.TEXT, d.f(30), d.px(4), Palette.ACCENT)
-                p.inner -> rounded(0xFF2E333B.toInt(), d.f(30))
+                p.inner -> rounded(Palette.SURFACE4, d.f(30))
                 else -> rounded(Palette.SURFACE2, d.f(30))
             }
             val fg = if (on) Palette.BG else Palette.TEXT
@@ -195,11 +199,11 @@ class CrossMenu(
             text = key
             textStyle(d, 16, Palette.TEXT, 600)
             setPadding(d.px(10), d.px(3), d.px(10), d.px(3))
-            background = rounded(0, d.f(6), d.px(1), 0xFF5A606B.toInt())
+            background = rounded(0, d.f(6), d.px(1), Palette.HINT_BORDER)
         })
         addView(TextView(context).apply {
             text = what
-            textStyle(d, 16, 0xFFD5D8DE.toInt())
+            textStyle(d, 16, Palette.HINT_TEXT)
         }, LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply { marginStart = d.px(10) })
     }
 

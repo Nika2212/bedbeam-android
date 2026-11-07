@@ -30,7 +30,7 @@ class VideoOsd(context: Context) : FrameLayout(context) {
 
         bubble.apply {
             gravity = Gravity.CENTER
-            background = oval(0xB80B0C0E.toInt())
+            background = oval(Palette.OSD_BUBBLE)
             textStyle(d, 22, Palette.TEXT, 700)
         }
         addView(bubble, LayoutParams(d.px(128), d.px(128), Gravity.CENTER))
@@ -39,7 +39,7 @@ class VideoOsd(context: Context) : FrameLayout(context) {
         bar.gravity = Gravity.CENTER_VERTICAL
         now.textStyle(d, 18, Palette.TEXT, 600)
         total.textStyle(d, 18, Palette.TEXT, 600)
-        track.background = rounded(0x4DF2F3F5, d.f(3))
+        track.background = rounded(Palette.OSD_TRACK, d.f(3))
         fill.background = rounded(Palette.ACCENT, d.f(3))
         knob.background = oval(Palette.TEXT)
         track.addView(fill, LayoutParams(0, LayoutParams.MATCH_PARENT))
@@ -54,7 +54,7 @@ class VideoOsd(context: Context) : FrameLayout(context) {
         })
         bar.addView(total)
         bar.setPadding(d.px(24), d.px(14), d.px(24), d.px(14))
-        bar.background = rounded(0x990B0C0E.toInt(), d.f(24))
+        bar.background = rounded(Palette.OSD_BAR, d.f(24))
         addView(bar, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, Gravity.BOTTOM).apply {
             leftMargin = d.px(56); rightMargin = d.px(56); bottomMargin = d.px(32)
         })

@@ -73,6 +73,8 @@ class BrowserWebView(
         fun onVideoState(t: Double, d: Double, paused: Boolean)
         /** A video command found no <video> on the page (e.g. the player loads it on first play). */
         fun onNoVideo()
+        /** A text field on the page (any frame) got focus or was clicked: the keyboard should show. */
+        fun onEditableFocused()
         /** Link mode: the focused element's centre in CSS px, with the page's CSS viewport width. */
         fun onLinkTarget(x: Double, y: Double, viewportWidth: Double)
     }
@@ -127,6 +129,9 @@ class BrowserWebView(
             setSupportMultipleWindows(true)
             javaScriptCanOpenWindowsAutomatically = false // no window.open without a click
             setGeolocationEnabled(false)
+            // Don't move focus to the page's first element (and scroll to the top) whenever the
+            // WebView regains focus, e.g. after the cross menu closes.
+            setNeedInitialFocus(false)
         }
         // Some video sites block or downgrade embedded WebViews: look like regular Chrome.
         mobileUa = settings.userAgentString.replace("; wv)", ")").replace(" Version/4.0", "")
@@ -167,6 +172,7 @@ class BrowserWebView(
                 }
                 "paused" -> if (frame == playingFrame) listener.onVideoPlaying(false)
                 "state" -> listener.onVideoState(o.optDouble("t"), o.optDouble("d"), o.optBoolean("paused"))
+                "edit" -> listener.onEditableFocused()
                 "target" -> if (isMain) listener.onLinkTarget(o.optDouble("x"), o.optDouble("y"), o.optDouble("vw"))
             }
         }

@@ -1,13 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  BedBeam colour tokens: the single place to change the app's colours (read by ui/Palette at start).
+  Matches the design canvas (dark minimal). See docs/UI.md.
+-->
 <resources>
-    <!-- Design tokens from the BedBeam design canvas (dark minimal). -->
+    <!-- Backgrounds, darkest to lightest -->
     <color name="bg">#0B0C0E</color>
     <color name="surface">#16181C</color>
     <color name="surface2">#23272E</color>
+    <color name="surface3">#252A33</color>
+    <color name="surface4">#2E333B</color>
+    <!-- Accent text on the light (focused) background -->
+    <color name="accent_on_light">#1A5FB4</color>
+    <!-- Dimming behind sheets / behind the cross menu -->
+    <color name="scrim">#BF0B0C0E</color>
+    <color name="scrim_strong">#C70B0C0E</color>
+    <!-- Key hints over a dimmed page -->
+    <color name="hint_text">#D5D8DE</color>
+    <color name="hint_border">#5A606B</color>
+    <!-- Full-screen video: background, seek bubble, timeline panel and track -->
+    <color name="video_bg">#000000</color>
+    <color name="osd_bubble">#B80B0C0E</color>
+    <color name="osd_bar">#990B0C0E</color>
+    <color name="osd_track">#4DF2F3F5</color>
+    <!-- Outlines -->
     <color name="border">#2A2E35</color>
+    <color name="border2">#3A3F48</color>
+    <!-- Text: main, secondary, secondary on the light focused state -->
     <color name="text">#F2F3F5</color>
     <color name="muted">#A3A8B3</color>
+    <color name="on_light_muted">#4A4F58</color>
+    <!-- Accent: focus rings, pointer pulse, progress, values -->
     <color name="accent">#5AA9FF</color>
-    <!-- Logo tile background (branding/). -->
+    <!-- Destructive actions (Remove) -->
+    <color name="danger">#FF8A80</color>
+    <!-- Logo tile background (branding/) -->
     <color name="icon_bg">#EEEAE6</color>
 </resources>

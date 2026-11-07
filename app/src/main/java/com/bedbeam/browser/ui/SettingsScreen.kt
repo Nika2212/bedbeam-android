@@ -6,6 +6,7 @@ import android.view.Gravity
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import com.bedbeam.browser.R
 
 /**
  * Settings, in the start screen's style. Each row is one setting: OK changes its value
@@ -26,22 +27,21 @@ class SettingsScreen(context: Context, rows: List<Row>) : LinearLayout(context) 
         setBackgroundColor(Palette.BG)
         setPadding(d.px(72), d.px(40), d.px(72), d.px(28))
         isClickable = true
-        clipChildren = false
-        clipToPadding = false
+        // Clip, so a long list scrolls inside its area instead of drawing over the footer.
+        clipChildren = true
 
-        addView(TextView(context).apply { text = "Settings"; textStyle(d, 30, Palette.TEXT, 700) })
+        addView(TextView(context).apply { text = context.getString(R.string.settings); textStyle(d, 30, Palette.TEXT, 700) })
 
         list.orientation = VERTICAL
-        list.clipChildren = false
-        list.setPadding(0, d.px(8), 0, d.px(8))
-        rows.forEach { list.addView(row(it), LayoutParams(LayoutParams.MATCH_PARENT, d.px(68)).apply { topMargin = d.px(6) }) }
+        list.setPadding(0, d.px(4), 0, d.px(4))
+        rows.forEach { list.addView(row(it), LayoutParams(LayoutParams.MATCH_PARENT, d.px(62)).apply { topMargin = d.px(6) }) }
         addView(ScrollView(context).apply {
             isVerticalScrollBarEnabled = false
             addView(list)
         }, LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f).apply { topMargin = d.px(16) })
 
         addView(TextView(context).apply {
-            text = "OK  change      Back  close"
+            text = context.getString(R.string.settings_footer)
             gravity = Gravity.CENTER
             textStyle(d, 16, Palette.MUTED)
         }, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply { topMargin = d.px(12) })
@@ -71,7 +71,7 @@ class SettingsScreen(context: Context, rows: List<Row>) : LinearLayout(context) 
             background = if (has) rounded(Palette.TEXT, d.f(16)) else rounded(Palette.SURFACE, d.f(16), d.px(1), Palette.BORDER)
             label.setTextColor(if (has) Palette.BG else Palette.TEXT)
             hint.setTextColor(if (has) Palette.ON_LIGHT_MUTED else Palette.MUTED)
-            value.setTextColor(if (has) 0xFF1A5FB4.toInt() else Palette.ACCENT)
+            value.setTextColor(if (has) Palette.ACCENT_ON_LIGHT else Palette.ACCENT)
         }
         style(false)
         onFocus { style(it) }
