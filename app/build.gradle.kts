@@ -19,8 +19,8 @@ android {
         applicationId = "com.bedbeam.browser"
         minSdk = 29
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.0.1"
+        versionCode = 2
+        versionName = "1.0.0"
         // The projector is 32-bit ARM only; the app has no native code, so no ABI filter is needed.
     }
 

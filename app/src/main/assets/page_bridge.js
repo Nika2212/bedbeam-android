@@ -141,6 +141,13 @@
       return;
     }
     if (!v) { send({ type: 'none' }); return; }
+    if (m === 'fs') {
+      // Auto full screen: only works while the click that started the video still counts as a gesture.
+      if (!(document.fullscreenElement || document.webkitFullscreenElement)) {
+        try { var r = (v.requestFullscreen || v.webkitRequestFullscreen).call(v); if (r && r.catch) r.catch(function () {}); } catch (x) {}
+      }
+      return;
+    }
     if (m === 'toggle') {
       if (v.paused) { var p = v.play(); if (p && p.catch) p.catch(function () {}); } else v.pause();
     } else if (m.indexOf('seek:') === 0) {

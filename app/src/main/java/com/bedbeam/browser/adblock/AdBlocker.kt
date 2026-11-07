@@ -27,6 +27,15 @@ class AdBlocker(context: Context) {
 
     val domainCount get() = list.size
 
+    /** When the lists were last downloaded (ms), 0 if never. */
+    val updatedAt get() = prefs.getLong(KEY_UPDATED, 0L)
+
+    /** Download fresh lists now; [done] runs on the main thread with success/failure. */
+    fun updateNow(done: (Boolean) -> Unit) = io.execute {
+        val ok = update()
+        android.os.Handler(android.os.Looper.getMainLooper()).post { done(ok) }
+    }
+
     /** Load the compiled list (fast, background) and refresh it if older than a week or missing. */
     fun start() = io.execute {
         FilterList.load(listFile)?.let { list = it }
@@ -54,8 +63,8 @@ class AdBlocker(context: Context) {
         return list.isBlocked(host)
     }
 
-    private fun update() {
-        try {
+    private fun update(): Boolean {
+        return try {
             val t0 = System.currentTimeMillis()
             val streams = SOURCES.map { url ->
                 val c = (URL(url).openConnection() as HttpURLConnection).apply {
@@ -72,8 +81,10 @@ class AdBlocker(context: Context) {
             list = fresh
             prefs.edit().putLong(KEY_UPDATED, System.currentTimeMillis()).apply()
             Log.i(TAG, "updated: ${fresh.size} domains in ${System.currentTimeMillis() - t0} ms")
+            true
         } catch (e: Exception) {
             Log.w(TAG, "list update failed, keeping ${list.size} domains", e)
+            false
         }
     }
 

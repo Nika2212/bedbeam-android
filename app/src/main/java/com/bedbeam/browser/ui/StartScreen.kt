@@ -27,6 +27,7 @@ class StartScreen(
     private val onOpenAddress: () -> Unit,
     private val onBookmarkActions: (Int) -> Unit,
     private val onAddBookmark: () -> Unit,
+    private val onOpenSettings: () -> Unit,
 ) : LinearLayout(context) {
 
     private val d = Dims(context)
@@ -146,7 +147,24 @@ class StartScreen(
         addView(TextView(context).apply {
             text = "BedBeam"
             textStyle(d, 22, Palette.TEXT, 600)
-        }, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply { marginStart = d.px(12) })
+        }, LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = d.px(12) })
+        addView(settingsButton(), LayoutParams(d.px(52), d.px(52)))
+    }
+
+    private fun settingsButton() = ImageView(context).apply {
+        setImageResource(R.drawable.ic_settings)
+        contentDescription = "Settings"
+        isFocusable = true
+        isClickable = true
+        scaleType = ImageView.ScaleType.CENTER_INSIDE
+        setPadding(d.px(14), d.px(14), d.px(14), d.px(14))
+        fun style(has: Boolean) {
+            background = if (has) oval(Palette.TEXT) else oval(Palette.SURFACE).apply { setStroke(d.px(1), Palette.BORDER) }
+            imageTintList = ColorStateList.valueOf(if (has) Palette.BG else Palette.MUTED)
+        }
+        style(false)
+        onFocus { style(it); focusScale(it, 1.1f) }
+        setOnClickListener { onOpenSettings() }
     }
 
     private fun searchPill() = TextView(context).apply {

@@ -141,7 +141,7 @@ class AddressScreen(
             .forEach { add(Suggestion(Kind.BOOKMARK, it.name, UrlInput.displayHost(it.url), it.url)) }
         history.all().filter { it.title.contains(q, true) || it.url.contains(q, true) }.take(3)
             .forEach { add(Suggestion(Kind.HISTORY, it.title, it.url.removePrefix("https://").removePrefix("http://"), it.url)) }
-        add(Suggestion(Kind.SEARCH, "Search for “$q”", UrlInput.SEARCH_ENGINE_NAME, UrlInput.searchUrl(q)))
+        add(Suggestion(Kind.SEARCH, "Search for “$q”", UrlInput.engine.name, UrlInput.searchUrl(q)))
         return out.take(5)
     }
 

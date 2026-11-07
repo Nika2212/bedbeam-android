@@ -5,9 +5,9 @@ import java.net.URLEncoder
 
 /** Turns what the user typed into a URL: a web address as-is, anything else as a search. */
 object UrlInput {
-    // Changeable in settings later (step 7).
-    const val SEARCH_ENGINE_NAME = "Google"
-    private const val SEARCH_URL = "https://www.google.com/search?q="
+    /** The search engine in use; set from [Settings] at start and whenever it changes. */
+    @Volatile
+    var engine: Settings.Engine = Settings.ENGINES[0]
 
     private val scheme = Regex("^[a-zA-Z][a-zA-Z0-9+.-]*:")
     private val hostLike = Regex("^[^\\s/]+\\.[a-zA-Z]{2,}(:\\d+)?(/.*)?$")
@@ -29,7 +29,7 @@ object UrlInput {
         return searchUrl(s)
     }
 
-    fun searchUrl(query: String): String = SEARCH_URL + URLEncoder.encode(query.trim(), "UTF-8")
+    fun searchUrl(query: String): String = engine.searchUrl + URLEncoder.encode(query.trim(), "UTF-8")
 
     /** "https://www.kinovod.pro/film/1" → "kinovod.pro" */
     fun displayHost(url: String): String =

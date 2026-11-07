@@ -8,7 +8,10 @@ import android.os.Message
 import android.util.Log
 import android.view.View
 import android.webkit.ConsoleMessage
+import android.webkit.CookieManager
+import android.webkit.PermissionRequest
 import android.webkit.RenderProcessGoneDetail
+import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -29,16 +32,34 @@ import java.util.concurrent.atomic.AtomicInteger
  * The single WebView, configured for a low-memory TV, with the ad blocker built in:
  * ad requests are cut, popups/new windows are only allowed from a click and to the same site,
  * navigations to ad domains are refused, and known ad boxes are hidden with CSS.
- * Full-screen video arrives in step 4.
+ * Also: full-screen video, DRM (Widevine) playback, downloads and file upload via [Listener].
  */
 @SuppressLint("SetJavaScriptEnabled", "ViewConstructor")
 class BrowserWebView(
     context: Context,
     private val adBlocker: AdBlocker,
     private val listener: Listener,
+    desktopMode: Boolean,
 ) : WebView(context) {
 
+    /** Chrome's own mobile UA (without the WebView markers) and the matching desktop one. */
+    private val mobileUa: String
+    private val desktopUa: String
+
+    /** Desktop sites: a desktop Chrome user agent, so sites serve their full layout and player. */
+    fun setDesktopMode(on: Boolean) {
+        val ua = if (on) desktopUa else mobileUa
+        if (settings.userAgentString != ua) {
+            settings.userAgentString = ua
+            if (url != null) reload()
+        }
+    }
+
     interface Listener {
+        /** A page asked to choose a file (<input type=file>). Return true if handled. */
+        fun onFileChooser(callback: ValueCallback<Array<Uri>>, params: WebChromeClient.FileChooserParams): Boolean
+        /** A link started a download. */
+        fun onDownload(url: String, userAgent: String, contentDisposition: String?, mimeType: String?)
         fun onPageStarted(url: String)
         fun onPageFinished(url: String, title: String?)
         /** The page's renderer process died (usually killed for memory). */
@@ -106,9 +127,17 @@ class BrowserWebView(
             setSupportMultipleWindows(true)
             javaScriptCanOpenWindowsAutomatically = false // no window.open without a click
             setGeolocationEnabled(false)
-            // Some video sites block or downgrade embedded WebViews: look like regular Chrome.
-            userAgentString = userAgentString.replace("; wv)", ")").replace(" Version/4.0", "")
         }
+        // Some video sites block or downgrade embedded WebViews: look like regular Chrome.
+        mobileUa = settings.userAgentString.replace("; wv)", ")").replace(" Version/4.0", "")
+        val chrome = Regex("Chrome/[\\d.]+").find(mobileUa)?.value ?: "Chrome/120.0.0.0"
+        desktopUa = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) $chrome Safari/537.36"
+        settings.userAgentString = if (desktopMode) desktopUa else mobileUa
+
+        // Logins and players embedded from another site (iframes) need their own cookies.
+        CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
+
+        setDownloadListener { dlUrl, ua, disposition, mime, _ -> listener.onDownload(dlUrl, ua, disposition, mime) }
 
         // While BedBeam is in the background, let Android reclaim the page process before other apps.
         setRendererPriorityPolicy(RENDERER_PRIORITY_IMPORTANT, true)
@@ -242,6 +271,16 @@ class BrowserWebView(
             listener.onEnterFullscreen(view, callback)
 
         override fun onHideCustomView() = listener.onExitFullscreen()
+
+        /** Allow DRM-protected video (Widevine); refuse camera, microphone and the rest. */
+        override fun onPermissionRequest(request: PermissionRequest) {
+            val ok = request.resources.filter { it == PermissionRequest.RESOURCE_PROTECTED_MEDIA_ID }
+            if (ok.isNotEmpty()) request.grant(ok.toTypedArray()) else request.deny()
+        }
+
+        override fun onShowFileChooser(
+            view: WebView, callback: ValueCallback<Array<Uri>>, params: FileChooserParams,
+        ): Boolean = listener.onFileChooser(callback, params)
 
         // Black instead of the default grey play-button poster while a video loads.
         override fun getDefaultVideoPoster(): Bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)

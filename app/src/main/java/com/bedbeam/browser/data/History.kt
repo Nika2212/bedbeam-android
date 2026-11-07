@@ -30,6 +30,11 @@ class History(context: Context) {
 
     fun all(): List<Visit> = items
 
+    fun clear() {
+        items.clear()
+        io.execute { file.delete() }
+    }
+
     fun add(url: String, title: String?) {
         if (!url.startsWith("http")) return
         items.removeAll { it.url == url }

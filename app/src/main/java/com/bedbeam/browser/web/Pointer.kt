@@ -85,6 +85,9 @@ class PointerController(
 ) {
     private val d = Dims(view.context)
     private val choreographer = Choreographer.getInstance()
+
+    /** Pointer speed setting: 0.6 slow, 1 normal, 1.5 fast. */
+    var speedFactor = 1f
     private val scrollFactor = ViewConfiguration.get(view.context).scaledVerticalScrollFactor
 
     private var left = false
@@ -192,7 +195,7 @@ class PointerController(
         val dt = if (lastFrameNs == 0L) 0.016f else ((now - lastFrameNs) / 1e9f).coerceAtMost(0.05f)
         lastFrameNs = now
         val held = (now - holdStartNs) / 1e9f
-        val v = d.f(min(MAX_SPEED, START_SPEED + ACCEL * held))
+        val v = d.f(min(MAX_SPEED, START_SPEED + ACCEL * held) * speedFactor)
         val dx = ((if (right) 1 else 0) - (if (left) 1 else 0)) * v * dt
         val dy = ((if (down) 1 else 0) - (if (up) 1 else 0)) * v * dt
         moveBy(dx, dy)
