@@ -142,7 +142,7 @@ class StartScreen(
     private fun header() = LinearLayout(context).apply {
         orientation = HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL
-        addView(ImageView(context).apply { setImageResource(R.drawable.ic_launcher) }, LayoutParams(d.px(32), d.px(32)))
+        addView(ImageView(context).apply { setImageResource(R.drawable.logo_tile) }, LayoutParams(d.px(36), d.px(36)))
         addView(TextView(context).apply {
             text = "BedBeam"
             textStyle(d, 22, Palette.TEXT, 600)

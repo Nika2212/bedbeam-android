@@ -8,4 +8,6 @@
     <color name="text">#F2F3F5</color>
     <color name="muted">#A3A8B3</color>
     <color name="accent">#5AA9FF</color>
+    <!-- Logo tile background (branding/). -->
+    <color name="icon_bg">#EEEAE6</color>
 </resources>
