@@ -166,6 +166,16 @@ class PointerController(
         okHandled = false
     }
 
+    /** Pointer position as fractions of the page area (0..1), for handing over to link mode. */
+    fun fraction(): Pair<Float, Float> =
+        if (view.width == 0) 0.5f to 0.5f else view.px / view.width to view.py / view.height
+
+    /** Tap at a page position (view px) and leave the pointer there. Used by link mode. */
+    fun tapAt(x: Float, y: Float) {
+        view.moveTo(x.coerceIn(0f, view.width - 1f), y.coerceIn(0f, view.height - 1f))
+        tap()
+    }
+
     private fun show() {
         view.removeCallbacks(hide)
         view.animate().cancel()

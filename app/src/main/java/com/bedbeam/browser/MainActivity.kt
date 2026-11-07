@@ -23,6 +23,7 @@ import com.bedbeam.browser.ui.Palette
 import com.bedbeam.browser.ui.StartScreen
 import com.bedbeam.browser.ui.VideoOsd
 import com.bedbeam.browser.web.BrowserWebView
+import com.bedbeam.browser.web.LinkKeys
 import com.bedbeam.browser.web.PointerController
 import com.bedbeam.browser.web.PointerView
 import com.bedbeam.browser.web.VideoKeys
@@ -44,6 +45,9 @@ class MainActivity : Activity(), BrowserWebView.Listener {
     private lateinit var fullscreenHost: FrameLayout
     private lateinit var osd: VideoOsd
     private lateinit var videoKeys: VideoKeys
+    private lateinit var linkKeys: LinkKeys
+    /** Link mode (arrows jump between links) instead of pointer mode; kept across pages. */
+    private var linkMode = false
 
     private var fullscreenView: View? = null
     private var fullscreenExit: WebChromeClient.CustomViewCallback? = null
@@ -74,6 +78,7 @@ class MainActivity : Activity(), BrowserWebView.Listener {
         pageHost.addView(pointerView, match()) // stays above the WebView, which is inserted at index 0
         pointer = PointerController(pointerView, { web }, onHoldOk = ::openCrossMenu)
         pointerView.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> pointer.ensurePlaced() }
+        linkKeys = LinkKeys(send = { web?.pageCommand(it) ?: false }, onHoldOk = ::openCrossMenu)
         start = StartScreen(
             this, bookmarks,
             onOpenUrl = ::openPage,
@@ -179,7 +184,7 @@ class MainActivity : Activity(), BrowserWebView.Listener {
         fullscreenHost.removeView(v)
         fullscreenHost.visibility = View.GONE
         osd.hideNow()
-        pointerView.visibility = View.VISIBLE
+        pointerView.visibility = if (linkMode) View.GONE else View.VISIBLE
         updateKeepScreenOn()
         web?.requestFocus()
     }
@@ -192,6 +197,30 @@ class MainActivity : Activity(), BrowserWebView.Listener {
     override fun onVideoState(t: Double, d: Double, paused: Boolean) {
         val afterToggle = videoKeys.consumeToggleFlag()
         if (inFullscreen) videoKeys.onState(t, d, paused, afterToggle)
+    }
+
+    // ---- link mode ------------------------------------------------------------------------------
+
+    private fun setLinkMode(on: Boolean) {
+        linkMode = on
+        pointer.stop()
+        linkKeys.stop()
+        if (on) {
+            pointerView.visibility = View.GONE
+            val (fx, fy) = pointer.fraction()
+            web?.pageCommand("link:start:$fx,$fy") // ring starts on the link nearest the pointer
+        } else {
+            web?.pageCommand("link:clear")
+            pointerView.visibility = View.VISIBLE
+            pointer.ensurePlaced()
+        }
+    }
+
+    override fun onLinkTarget(x: Double, y: Double, viewportWidth: Double) {
+        val w = web ?: return
+        if (viewportWidth <= 0) return
+        val scale = w.width / viewportWidth // CSS px → view px
+        pointer.tapAt((x * scale).toFloat(), (y * scale).toFloat())
     }
 
     override fun onNoVideo() {
@@ -282,8 +311,9 @@ class MainActivity : Activity(), BrowserWebView.Listener {
                 CrossMenu.Action("Address", CrossMenu.ICON_ADDRESS) { openAddress(url) },
                 CrossMenu.Action("Start screen", CrossMenu.ICON_HOME) { showStart() },
             ),
-            // Inner slot becomes "Switch to Links" in step 5.
             CrossMenu.Dir.DOWN to listOf(
+                if (linkMode) CrossMenu.Action("Switch to Pointer", CrossMenu.ICON_POINTER) { setLinkMode(false) }
+                else CrossMenu.Action("Switch to Links", CrossMenu.ICON_LINK) { setLinkMode(true) },
                 CrossMenu.Action(if (adOn) "Ad-block: On" else "Ad-block: Off", CrossMenu.ICON_SHIELD) {
                     adBlocker.setEnabledFor(host, !adOn)
                     w.refreshAdBoxHiding()
@@ -363,7 +393,7 @@ class MainActivity : Activity(), BrowserWebView.Listener {
                 if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) web?.videoCommand("toggle")
                 return true
             }
-            if (pointer.handleKey(event)) return true
+            if (if (linkMode) linkKeys.handleKey(event) else pointer.handleKey(event)) return true
         }
         return super.dispatchKeyEvent(event)
     }

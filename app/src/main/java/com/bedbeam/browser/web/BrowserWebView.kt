@@ -52,6 +52,15 @@ class BrowserWebView(
         fun onVideoState(t: Double, d: Double, paused: Boolean)
         /** A video command found no <video> on the page (e.g. the player loads it on first play). */
         fun onNoVideo()
+        /** Link mode: the focused element's centre in CSS px, with the page's CSS viewport width. */
+        fun onLinkTarget(x: Double, y: Double, viewportWidth: Double)
+    }
+
+    /** Send a command to the top page (link mode). False if the page script isn't ready. */
+    fun pageCommand(cmd: String): Boolean {
+        val frame = topFrame ?: return false
+        frame.postMessage(cmd)
+        return true
     }
 
     /** Last frame that reported a video / a playing video: where remote commands go. */
@@ -126,9 +135,10 @@ class BrowserWebView(
                 }
                 "paused" -> if (frame == playingFrame) listener.onVideoPlaying(false)
                 "state" -> listener.onVideoState(o.optDouble("t"), o.optDouble("d"), o.optBoolean("paused"))
+                "target" -> if (isMain) listener.onLinkTarget(o.optDouble("x"), o.optDouble("y"), o.optDouble("vw"))
             }
         }
-        val js = context.assets.open("video_bridge.js").bufferedReader().use { it.readText() }
+        val js = context.assets.open("page_bridge.js").bufferedReader().use { it.readText() }
         WebViewCompat.addDocumentStartJavaScript(this, js, setOf("*"))
     }
 

@@ -38,6 +38,7 @@ class CrossMenu(
     private var sel: Sel? = null
     /** The OK press that opened the menu is still held: swallow its repeats and release. */
     private var swallowOk = true
+    private var okArmed = false
 
     private inner class Pill(val root: LinearLayout, val icon: ImageView, val text: TextView, val action: Action, val inner: Boolean)
 
@@ -106,6 +107,21 @@ class CrossMenu(
             return true
         }
         if (e.keyCode == KeyEvent.KEYCODE_BACK) return false
+        // Run on OK *release*, while the menu still owns the key: running on press let the
+        // release fall through to the page and click whatever was under the pointer.
+        if (isOk) {
+            if (e.action == KeyEvent.ACTION_DOWN && e.repeatCount == 0) okArmed = true
+            if (e.action == KeyEvent.ACTION_UP && okArmed) {
+                okArmed = false
+                val p = sel?.let { pills[it] }
+                if (p == null) onClose()
+                else if (p.action.enabled) {
+                    onClose()
+                    p.action.run()
+                }
+            }
+            return true
+        }
         if (e.action != KeyEvent.ACTION_DOWN) return true
         val dir = when (e.keyCode) {
             KeyEvent.KEYCODE_DPAD_UP -> Dir.UP
@@ -114,18 +130,7 @@ class CrossMenu(
             KeyEvent.KEYCODE_DPAD_RIGHT -> Dir.RIGHT
             else -> null
         }
-        if (dir != null) {
-            if (e.repeatCount == 0) select(dir)
-            return true
-        }
-        if (isOk && e.repeatCount == 0) {
-            val p = sel?.let { pills[it] }
-            if (p == null) onClose()
-            else if (p.action.enabled) {
-                onClose()
-                p.action.run()
-            }
-        }
+        if (dir != null && e.repeatCount == 0) select(dir)
         return true
     }
 
@@ -206,5 +211,7 @@ class CrossMenu(
         val ICON_ADDRESS = R.drawable.ic_search
         val ICON_HOME = R.drawable.ic_home
         val ICON_SHIELD = R.drawable.ic_shield
+        val ICON_LINK = R.drawable.ic_link
+        val ICON_POINTER = R.drawable.ic_pointer
     }
 }
